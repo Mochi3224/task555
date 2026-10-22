@@ -13,6 +13,8 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ice);font-family
 canvas{display:block}
 .ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(12,15,22,.92);z-index:10;text-align:center;padding:20px}
 .hide{display:none!important}
+input.code{font:inherit;padding:10px;background:var(--panel);color:var(--ice);border:1px solid var(--steel);width:150px;text-align:center}
+#cd{position:absolute;top:30%;left:0;right:0;text-align:center;font-size:120px;font-weight:700;color:#fff;text-shadow:0 0 30px rgba(255,77,61,.9)}
 .sl{display:flex;flex-direction:column;gap:2px;margin:10px 0;color:var(--ice)}
 .sl input{width:min(320px,75vw);accent-color:var(--red)}
 h1{font-size:clamp(40px,8vw,84px);margin:0;font-weight:700;line-height:1;letter-spacing:-1px;transform:skewX(-8deg)}
@@ -56,6 +58,7 @@ button.sel{background:var(--ice);color:var(--bg)}
   <h1>APEX <b>ARENA</b></h1>
   <p>3Dアリーナで敵部隊を倒し続けよう。戦績はアカウントに保存されます。</p>
   <div class="row"><button id="btnLogin">Googleでログイン</button><button id="btnSetLogin" class="alt">設定</button></div>
+  <button id="btnOff" class="alt">オフライン対戦(ログイン不要・CPUと1対1)</button>
   <p id="loginErr"></p>
 </div>
 
@@ -65,11 +68,20 @@ button.sel{background:var(--ice);color:var(--bg)}
   <div class="row" id="legends"></div>
   <p id="legDesc"></p>
   <p>武器を選択</p><div class="row" id="weapons"></div>
-  <div class="row"><button id="btnStart">出撃</button><button id="btnSetMenu" class="alt">設定</button><button id="btnOut" class="alt">ログアウト</button></div>
+  <div class="row"><button id="btnStart">出撃</button><button id="btnVs">対戦</button><button id="btnSetMenu" class="alt">設定</button><button id="btnOut" class="alt">ログアウト</button></div>
   <div class="card"><b>ランキング(最多キル)</b><ol id="board"></ol></div>
   <p>WASD 移動(Wで徐々に加速) / Shift しゃがみ・スライディング(滑り中もジャンプ可) / Space ジャンプ・空中でマウスを回しながらA/Dでストレイフ / 壁の前でW+Spaceで壁登り→登り中にSpaceでブースト / 空中で壁に触れてSpaceを押し直すと壁ジャンプ / 左クリック 射撃 / 右クリック スコープ / 1:アサルト 2:SMG 4:スナイパー / 3:素手(1.3倍速)⇔武器を出す / R リロード / Q アビリティ / ESC 一時停止(再開・設定・タイトル)</p>
 </div>
 
+<div id="vs" class="ov hide">
+  <h1>対戦</h1>
+  <div id="vsMenu" class="row"><button id="vsCreate">部屋を作る</button><input id="vsCode" class="code" maxlength="4" inputmode="numeric" placeholder="4桁コード"><button id="vsJoin" class="alt">参加</button></div>
+  <button id="vsCpu" class="alt">オフライン対戦(CPUと1対1)</button>
+  <div id="vsRoom" class="card hide"><b id="vsInfo"></b><p id="vsP1"></p><p id="vsP2"></p>
+    <div class="row"><button id="vsOk">OK(準備完了)</button><button id="vsLeave" class="alt">退出</button></div></div>
+  <p id="vsMsg">近くの人と同じ部屋コードで対戦。お互いにOKを押すと3・2・1で開始します</p>
+  <button id="vsBack" class="alt">戻る</button>
+</div>
 <div id="pause" class="ov hide"><h1>PAUSE</h1>
   <div class="row"><button id="btnResume">再開</button><button id="btnPSet" class="alt">設定</button><button id="btnTitle" class="alt">タイトルへ</button></div>
   <p>タイトルへ戻ると、ここまでの戦績が保存されます</p></div>
@@ -81,10 +93,10 @@ button.sel{background:var(--ice);color:var(--bg)}
 </div>
 
 <div id="over" class="ov hide">
-  <h1>DOWNED</h1>
+  <h1 id="overT">DOWNED</h1>
   <p id="result"></p>
   <p id="saveMsg"></p>
-  <button id="btnBack">メニューへ戻る</button>
+  <button id="btnBack">タイトルへ戻る</button>
 </div>
 
 <div id="hud" class="hide">
@@ -94,14 +106,14 @@ button.sel{background:var(--ice);color:var(--bg)}
   <div id="abil"></div>
   <div id="bars"><div class="bar" id="sh"><i></i></div><div class="bar" id="hp"><i></i></div></div>
   <div id="ammo"><span id="am">30</span><small id="reload"></small></div>
-  <div id="flash"></div><div id="inv"></div><div id="boss"></div><div id="fps"></div>
+  <div id="flash"></div><div id="inv"></div><div id="boss"></div><div id="cd"></div><div id="fps"></div>
 </div>
 
 <script type="module">
 import * as THREE from 'three';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import {getFirestore,doc,getDoc,setDoc,collection,query,orderBy,limit,getDocs,serverTimestamp} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import {getFirestore,doc,getDoc,setDoc,collection,query,orderBy,limit,getDocs,serverTimestamp,onSnapshot} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig={
   apiKey:"AIzaSyDqkUSfY2goeCeFaCx3Z_1ZJU-NfnZMYPQ",
@@ -201,6 +213,111 @@ function drawSliders(){
 $('btnSetLogin').onclick=$('btnSetMenu').onclick=$('btnPSet').onclick=()=>show('settings',1);
 $('btnSetClose').onclick=()=>show('settings',0);
 drawWeapons();drawOpts();drawSliders();
+
+/* ---------- 対戦モード(1対1) ---------- */
+const D={kind:'cpu',role:'host',code:'',unsubs:[],opp:null,m:0,started:false,ready:false,seen:0,sn:0,shots:0,sendT:0,lastRx:0,oppUid:'',oppName:'',myRef:null};
+const cdE=$('cd'),vsMsg=t=>{$('vsMsg').textContent=t;};
+const roomRef=()=>doc(db,'rooms',D.code);
+function netSend(x){if(!D.myRef)return;setDoc(D.myRef,Object.assign({m:D.m,x:P.pos.x,y:P.pos.y,z:P.pos.z,yaw:P.yaw,sl:(P.slide>0||P.sj)?1:0,dmg:P.dealt||0},x||{}),{merge:true}).catch(()=>{});}
+function oppHit(d){P.dealt=(P.dealt||0)+d;}
+function duelTxt(){const hp=D.kind==='cpu'?(enemies[0]?Math.max(0,Math.round(enemies[0].hp)):0):Math.max(0,150-Math.round(P.dealt||0));return `${D.kind==='cpu'?'CPU':(D.oppName||'相手')}  HP ${hp}`;}
+function cleanDuel(){
+  D.unsubs.forEach(f=>f());D.unsubs=[];
+  if(D.opp){scene.remove(D.opp.e.g);D.opp=null;}
+  enemies.forEach(e=>scene.remove(e.g));enemies=[];
+  D.started=false;D.ready=false;D.myRef=null;
+}
+function endDuel(win){
+  if(G.over)return;
+  G.over=true;G.running=false;adsHeld=false;fire=false;cam.fov=S.fov;cam.updateProjectionMatrix();
+  if(D.kind==='net'&&!win)netSend({dead:1});
+  document.exitPointerLock();show('hud',0);show('pause',0);show('over',1);
+  $('overT').textContent=win?'勝ち!':'負け…';
+  $('result').textContent=win?'あなたの勝利です':'相手の勝ちです';$('saveMsg').textContent='';
+}
+function initDuel(){
+  show('vs',0);
+  const guest=D.kind==='net'&&D.role==='guest';
+  P.pos.set(0,0,guest?-30:30);P.yaw=guest?Math.PI:0;P.pitch=0;P.wave=D.kind==='cpu'?6:1;P.dealt=0;
+  G.cd=3;G.goT=0;D.seen=0;D.sn=0;D.shots=0;D.sendT=0;D.lastRx=performance.now();
+  if(D.kind==='cpu'){spawnEnemy();enemies[0].g.position.set(0,0,-30);}
+  else{
+    spawnEnemy();const e=enemies.pop();e.opp=true;e.hp=1e9;e.g.position.set(0,0,guest?30:-30);
+    D.opp={e,tx:e.g.position.x,ty:0,tz:e.g.position.z,tyaw:guest?0:Math.PI,sl:0};
+    D.myRef=doc(db,'rooms',D.code,'pl',user.uid);
+    netSend({dead:0,left:0,dmg:0,sn:0});
+    D.unsubs.push(onSnapshot(doc(db,'rooms',D.code,'pl',D.oppUid),snap=>{
+      const d=snap.data();if(!d||d.m!==D.m||!D.opp)return;
+      D.lastRx=performance.now();const o=D.opp;
+      o.tx=d.x;o.ty=d.y;o.tz=d.z;o.tyaw=d.yaw;o.sl=d.sl;
+      if(d.dmg>D.seen){const dd=d.dmg-D.seen;D.seen=d.dmg;if(G.cd<=0&&!G.over)dmgPlayer(dd);}
+      if(d.sn>D.sn){D.sn=d.sn;const p=o.e.g.position;tracer(new THREE.Vector3(p.x,p.y+1.35,p.z),new THREE.Vector3(d.sx,d.sy,d.sz),0xff5a4a);}
+      if((d.dead||d.left)&&!G.over)endDuel(true);
+    },()=>{}));
+  }
+  setTimeout(()=>{if(!locked&&G.running&&!G.over)show('pause',1);},500);   // 画面固定に失敗したら「再開」を出す
+}
+function updOpp(dt){
+  const o=D.opp,e=o.e,p=e.g.position,a=Math.min(1,dt*10),ox=p.x,oz=p.z;
+  p.x+=(o.tx-p.x)*a;p.y+=(o.ty-p.y)*a;p.z+=(o.tz-p.z)*a;
+  let da=o.tyaw+Math.PI-e.g.rotation.y;da=Math.atan2(Math.sin(da),Math.cos(da));e.g.rotation.y+=da*a;
+  e.b.rotation.x=o.sl?-1.15:0;e.b.position.y=o.sl?.35:0;
+  const sw=Math.sin(performance.now()/130)*Math.min(1,Math.hypot(p.x-ox,p.z-oz)/dt/6);
+  e.legs[0].rotation.x=sw*.8;e.legs[1].rotation.x=-sw*.8;
+}
+function showRoom(on){show('vsRoom',on);show('vsMenu',!on);show('vsCpu',!on);}
+function listenRoom(){
+  showRoom(1);
+  D.unsubs.push(onSnapshot(roomRef(),snap=>{
+    const d=snap.data();if(!d)return;
+    D.oppUid=D.role==='host'?d.guestUid:d.hostUid;D.oppName=D.role==='host'?d.guestName:d.hostName;
+    $('vsInfo').textContent=`部屋コード: ${D.code}`;
+    setT($('vsP1'),`${d.hostName}(ホスト) ${d.hostReady?'✔準備OK':'…準備中'}`);
+    setT($('vsP2'),d.guestUid?`${d.guestName} ${d.guestReady?'✔準備OK':'…準備中'}`:'相手を待っています…(このコードを相手に伝えてください)');
+    if(d.state==='lobby'&&D.role==='host'&&d.hostReady&&d.guestReady&&d.guestUid)setDoc(roomRef(),{state:'count',m:Date.now()},{merge:true});
+    if(d.state==='count'&&!D.started){D.started=true;D.m=d.m;D.unsubs.forEach(f=>f());D.unsubs=[];startGame(true);}
+  },e=>vsMsg('通信エラー: '+(e.code||e.message))));
+}
+$('btnVs').onclick=()=>{show('vs',1);showRoom(0);vsMsg('近くの人と同じ部屋コードで対戦。お互いにOKを押すと3・2・1で開始します');};
+$('btnOff').onclick=()=>{show('login',0);show('vs',1);openCpu();};
+function openCpu(){D.kind='cpu';D.role='host';showRoom(1);$('vsInfo').textContent='オフライン対戦(通信なし)';setT($('vsP1'),'あなた …準備中');setT($('vsP2'),'CPU ✔準備OK');$('vsOk').textContent='OK(準備完了)';}
+$('vsCpu').onclick=openCpu;
+$('vsCreate').onclick=async()=>{
+  if(!user){vsMsg('部屋を作るにはGoogleログインが必要です');return;}
+  try{
+    D.kind='net';D.role='host';D.code='';
+    for(let i=0;i<8&&!D.code;i++){const c=String(1000+Math.floor(Math.random()*9000)),sn=await getDoc(doc(db,'rooms',c));if(!sn.exists()||Date.now()-(sn.data().created||0)>3600000)D.code=c;}
+    await setDoc(roomRef(),{created:Date.now(),state:'lobby',hostUid:user.uid,hostName:user.displayName||'Player',hostReady:false,guestUid:'',guestName:'',guestReady:false,m:0});
+    $('vsOk').textContent='OK(準備完了)';vsMsg('');listenRoom();
+  }catch(e){vsMsg('作成に失敗: '+(e.code||e.message)+'(Firestoreのルールを更新しましたか?)');}
+};
+$('vsJoin').onclick=async()=>{
+  if(!user){vsMsg('参加にはGoogleログインが必要です');return;}
+  const c=$('vsCode').value.trim();if(!/^\d{4}$/.test(c)){vsMsg('4桁のコードを入力してください');return;}
+  try{
+    const sn=await getDoc(doc(db,'rooms',c));
+    if(!sn.exists()){vsMsg('部屋が見つかりません');return;}
+    const d=sn.data();if(d.state!=='lobby'||(d.guestUid&&d.guestUid!==user.uid)){vsMsg('この部屋には入れません');return;}
+    D.kind='net';D.role='guest';D.code=c;
+    await setDoc(roomRef(),{guestUid:user.uid,guestName:user.displayName||'Player',guestReady:false},{merge:true});
+    $('vsOk').textContent='OK(準備完了)';vsMsg('');listenRoom();
+  }catch(e){vsMsg('参加に失敗: '+(e.code||e.message));}
+};
+$('vsOk').onclick=async()=>{
+  if(D.kind==='cpu'){startGame(true);return;}
+  try{
+    D.ready=!D.ready;$('vsOk').textContent=D.ready?'準備完了!(もう一度押すと取り消し)':'OK(準備完了)';
+    await setDoc(roomRef(),{[D.role==='host'?'hostReady':'guestReady']:D.ready},{merge:true});
+  }catch(e){vsMsg('通信エラー: '+(e.code||e.message));}
+};
+function vsLeave(){
+  if(D.kind==='net'&&D.code&&!D.started){
+    setDoc(roomRef(),D.role==='host'?{state:'end'}:{guestUid:'',guestName:'',guestReady:false},{merge:true}).catch(()=>{});
+  }
+  cleanDuel();showRoom(0);$('vsOk').textContent='OK(準備完了)';
+}
+$('vsLeave').onclick=()=>{vsLeave();vsMsg('退出しました');};
+$('vsBack').onclick=()=>{vsLeave();show('vs',0);show(user?'menu':'login',1);};
 
 /* ---------- 3Dシーン ---------- */
 const scene=new THREE.Scene();
@@ -338,26 +455,28 @@ function setWeapon(n){
   guns.forEach(q=>{q.g.visible=q===o;q.flash.visible=false;});
   $('scope').className=n===2?'snp':'';
 }
-function startGame(){
-  G.legend=pick;G.running=true;G.over=false;
+function startGame(duel){
+  G.legend=pick;G.running=true;G.over=false;G.mode=duel?'duel':'wave';G.cd=0;G.goT=0;
   Object.assign(P,{vy:0,ground:true,yaw:0,pitch:0,hp:100,sh:50,ammo:30,reload:0,fireT:0,cd:0,dash:0,boost:0,kills:0,wave:0,kick:0,eye:1.7,adsT:0,slide:0,sdx:0,sdz:-1,lx:0,lz:-1,flashT:0,vx:0,vz:0,sj:false,climbT:0,jp:false,ramp:0,dip:0,roll:0,sw:0,w:0,am:[30,32,5],rt:1.6,inv:0,hurtT:0,wj:0,wjT:0,un:false,eq:0});
   P.pos.set(0,0,0);
   enemies.forEach(e=>scene.remove(e.g));enemies=[];bullets.forEach(q=>scene.remove(q.m));bullets=[];adsHeld=false;fire=false;P.am=WP.map(w=>w.mag);P.w=-1;setWeapon(pickW);
   show('menu',0);show('over',0);show('hud',1);show('pause',0);
-  nextWave();
+  if(duel)initDuel();else nextWave();
   ren.domElement.requestPointerLock();
 }
-$('btnStart').onclick=startGame;
+$('btnStart').onclick=()=>startGame();
 const lockIt=(n=0)=>{show('settings',0);try{const r=ren.domElement.requestPointerLock();if(r&&r.catch)r.catch(()=>{if(n<5)setTimeout(()=>lockIt(n+1),400);});}catch(e){}};
 $('btnResume').onclick=()=>lockIt();
 $('btnTitle').onclick=async()=>{
+  const duel=G.mode==='duel';
+  if(duel&&D.kind==='net'&&!G.over)netSend({left:1});
   G.running=false;G.over=true;adsHeld=false;fire=false;cam.fov=S.fov;cam.updateProjectionMatrix();
-  enemies.forEach(e=>scene.remove(e.g));enemies=[];bullets.forEach(q=>scene.remove(q.m));bullets=[];
-  show('pause',0);show('settings',0);show('hud',0);show('menu',1);
-  if(P.wave>0)await saveResult(P.kills,P.wave);
-  await loadProfile();loadBoard();
+  cleanDuel();bullets.forEach(q=>scene.remove(q.m));bullets=[];
+  show('pause',0);show('settings',0);show('hud',0);show(user?'menu':'login',1);
+  if(!duel&&P.wave>0&&user)await saveResult(P.kills,P.wave);
+  if(user){await loadProfile();loadBoard();}
 };
-$('btnBack').onclick=async()=>{show('over',0);show('menu',1);await loadProfile();loadBoard();};
+$('btnBack').onclick=async()=>{cleanDuel();show('over',0);show(user?'menu':'login',1);if(user){await loadProfile();loadBoard();}};
 
 document.addEventListener('pointerlockchange',()=>{
   locked=document.pointerLockElement===ren.domElement;
@@ -388,7 +507,7 @@ addEventListener('keyup',e=>{keys[e.code]=0;if(e.code.startsWith('Shift'))keys.S
 
 function reload(){const W=WP[P.w];if(!P.un&&!P.reload&&P.ammo<W.mag)P.reload=P.rt=W.rt;}
 function ability(){
-  if(P.cd>0)return;P.cd=LEG[G.legend].cd;
+  if(P.cd>0||G.cd>0)return;P.cd=LEG[G.legend].cd;
   if(G.legend==='wraith'){P.dash=.25;P.inv=2;}
   else if(G.legend==='lifeline')P.hp=Math.min(100,P.hp+40);
   else P.boost=4;
@@ -410,20 +529,23 @@ function shoot(){
   cam.getWorldDirection(dir);
   const sg=W.sp*(1-W.ar*P.adsT);dir.x+=(Math.random()-.5)*sg;dir.y+=(Math.random()-.5)*sg;dir.z+=(Math.random()-.5)*sg;dir.normalize();
   cam.getWorldPosition(org);rc.set(org,dir);rc.far=150;
-  const hits=rc.intersectObjects(boxMeshes.concat(...enemies.map(e=>e.meshes)),false);
+  const hits=rc.intersectObjects(boxMeshes.concat(...enemies.map(e=>e.meshes),D.opp?D.opp.e.meshes:[]),false);
   const from=gun.localToWorld(new THREE.Vector3(0,.02,muz));
   let end=org.clone().addScaledVector(dir,120);
   if(hits.length){
     const h=hits[0];end=h.point;const e=h.object.userData.enemy;
     if(e){
-      if(e.boss){e.hits--;if(e.hits<=0)e.hp=0;}else e.hp-=h.object.userData.head?W.hd:W.bd;
+      if(e.opp)oppHit(h.object.userData.head?W.hd:W.bd);else if(e.boss){e.hits--;if(e.hits<=0)e.hp=0;}else e.hp-=h.object.userData.head?W.hd:W.bd;
       const c=$('cross');c.classList.add('hit');setTimeout(()=>c.classList.remove('hit'),90);
       if(e.hp<=0){scene.remove(e.g);enemies=enemies.filter(x=>x!==e);P.kills+=e.boss?5:1;}
     }
   }
   tracer(from,end,0xffe27a);
+  if(G.mode==='duel'&&D.kind==='net'){D.shots++;netSend({sn:D.shots,sx:end.x,sy:end.y,sz:end.z});D.sendT=.1;}
 }
 async function die(){
+  if(G.mode==='duel'){endDuel(false);return;}
+  $('overT').textContent='DOWNED';
   G.over=true;G.running=false;adsHeld=false;fire=false;cam.fov=S.fov;cam.updateProjectionMatrix();
   document.exitPointerLock();show('hud',0);show('pause',0);show('over',1);
   $('result').textContent=`ウェーブ ${P.wave} / キル ${P.kills}`;
@@ -433,7 +555,8 @@ async function die(){
 const fwd=new THREE.Vector3();
 function update(dt){
   // 移動
-  const f=(keys.KeyW?1:0)-(keys.KeyS?1:0),r=(keys.KeyD?1:0)-(keys.KeyA?1:0);
+  const fz=G.cd>0?0:1,f=((keys.KeyW?1:0)-(keys.KeyS?1:0))*fz,r=((keys.KeyD?1:0)-(keys.KeyA?1:0))*fz;
+  if(G.cd>0){P.vx=P.vz=0;P.slide=0;}
   const sy=Math.sin(P.yaw),cy=Math.cos(P.yaw);
   let mx=-sy*f+cy*r,mz=-cy*f-sy*r;const l=Math.hypot(mx,mz);if(l>1){mx/=l;mz/=l;}
   if(mx||mz){P.lx=mx;P.lz=mz;}
@@ -456,7 +579,7 @@ function update(dt){
     else if(P.climbT<=0)P.pos.y=P.ctop;
   }else{
     if(P.ground){
-      if(keys.Space){
+      if(keys.Space&&G.cd<=0){
         P.vy=8;P.ground=false;
         if(P.slide>0){P.slide=0;P.sj=true;const v=Math.hypot(P.vx,P.vz)||1,k=Math.min(26,v*1.4+2)/v;P.vx*=k;P.vz*=k;}   // スライドジャンプ
       }else if(P.slide>0){
@@ -478,10 +601,10 @@ function update(dt){
   // 射撃
   P.fireT-=dt;P.kick=Math.max(0,P.kick-dt*.4);
   if(P.reload>0){P.reload-=dt;if(P.reload<=0){P.reload=0;P.ammo=WP[P.w].mag;}}
-  if(fire&&P.fireT<=0&&!P.reload&&!P.un){if(P.ammo>0)shoot();else reload();}
+  if(fire&&G.cd<=0&&P.fireT<=0&&!P.reload&&!P.un){if(P.ammo>0)shoot();else reload();}
   // 敵
   const eye=new THREE.Vector3(P.pos.x,P.pos.y+P.eye-.1,P.pos.z);
-  for(const e of enemies){
+  for(const e of enemies){if(G.cd>0)continue;
     const p=e.g.position,dx=P.pos.x-p.x,dz=P.pos.z-p.z,d=Math.hypot(dx,dz)||1,spd=Math.min(8,3.5+P.wave*.3)*(e.boss?.7:1);
     e.sT-=dt;if(e.sT<=0){e.sT=.5+Math.random();e.side=-e.side;}          // ストレイフ切替
     if(e.ground){
@@ -522,7 +645,8 @@ function update(dt){
     else for(const {b} of boxes)if(bp.x>b.min.x&&bp.x<b.max.x&&bp.y>b.min.y&&bp.y<b.max.y&&bp.z>b.min.z&&bp.z<b.max.z){q.t=0;break;}
   }
   bullets=bullets.filter(q=>{if(q.t<=0){scene.remove(q.m);return false;}return true;});
-  if(!enemies.length&&!G.over){waveWait+=dt;if(waveWait>2.5){waveWait=0;nextWave();}}
+  if(G.mode==='duel'&&D.kind==='cpu'&&!enemies.length&&!G.over)endDuel(true);
+  if(!enemies.length&&!G.over&&G.mode!=='duel'){waveWait+=dt;if(waveWait>2.5){waveWait=0;nextWave();}}
   // カメラ
   P.eye+=(((P.slide>0||P.sj)?.8:crouch?1.1:1.7)-P.eye)*Math.min(1,dt*14);
   P.dip*=Math.max(0,1-dt*8);P.eq=Math.max(0,P.eq-dt*4);
@@ -545,14 +669,18 @@ function update(dt){
   if(P.flashT>0){P.flashT-=dt;if(P.flashT<=0)flash.visible=false;}
   $('dot').style.opacity=P.adsT>.85?1:0;$('scope').style.opacity=P.adsT;$('cross').style.visibility=P.adsT>.05?'hidden':'visible';
   // 無敵・自動回復・HUD
+  if(G.cd>0){G.cd=Math.max(0,G.cd-dt);if(G.cd<=0)G.goT=.8;}else if(G.goT>0)G.goT-=dt;
+  setT(cdE,G.cd>0?Math.ceil(G.cd):G.goT>0?'START!':'');
+  if(D.opp)updOpp(dt);
+  if(G.mode==='duel'&&D.kind==='net'){D.sendT-=dt;if(D.sendT<=0){D.sendT=.1;netSend();}if(G.cd<=0&&performance.now()-D.lastRx>10000)endDuel(true);}
   P.inv=Math.max(0,P.inv-dt);P.hurtT=Math.max(0,P.hurtT-dt);
   if(G.legend==='octane'&&P.hurtT<=0&&P.hp<100)P.hp=Math.min(100,P.hp+4*dt);
   const W=WP[P.w];
   hpI.style.width=Math.max(0,P.hp)+'%';shI.style.width=P.sh*2+'%';invE.style.opacity=P.inv>0?1:0;
   setT(amE,P.un?'—':P.ammo);setT(rlE,P.un?'素手 速度1.3倍(3キーで武器)':P.reload?'リロード中…':`${W.n}  ${W.mag}発`);
-  setT(waveE,`ウェーブ ${P.wave}  敵Lv.${P.wave}`);setT(killE,`キル ${P.kills}`);
+  if(G.mode==='duel'){setT(waveE,'1対1 対戦');setT(killE,'');}else{setT(waveE,`ウェーブ ${P.wave}  敵Lv.${P.wave}`);setT(killE,`キル ${P.kills}`);}
   setT(abE,`${LEG[G.legend].n}  Q: ${P.cd>0?Math.ceil(P.cd)+'秒':'使用可能'}${P.inv>0?'  無敵!':''}`);
-  const bs=enemies.find(e=>e.boss);setT(bossE,bs?`BOSS ${'■'.repeat(bs.hits)}${'□'.repeat(15-bs.hits)}`:'');
+  const bs=enemies.find(e=>e.boss);setT(bossE,G.mode==='duel'?duelTxt():bs?`BOSS ${'■'.repeat(bs.hits)}${'□'.repeat(15-bs.hits)}`:'');
 }
 
 let fr=0,ft0=performance.now(),pr=Math.min(devicePixelRatio,1.25);

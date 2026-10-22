@@ -36,8 +36,11 @@ button.sel{background:var(--ice);color:var(--bg)}
 #user{display:flex;align-items:center;gap:10px}
 #user img{width:40px;height:40px;border-radius:50%}
 #hud{position:fixed;inset:0;pointer-events:none;z-index:5}
-#cross{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px;border:2px solid #fff;border-radius:50%;opacity:.8}
-#cross.hit{border-color:var(--red);transform:scale(1.5)}
+#cross{--c:#fff;position:absolute;left:50%;top:50%;width:28px;height:28px;margin:-14px;
+  background:linear-gradient(var(--c),var(--c)) 0 12px/10px 4px no-repeat,linear-gradient(var(--c),var(--c)) 18px 12px/10px 4px no-repeat,linear-gradient(var(--c),var(--c)) 12px 0/4px 10px no-repeat,linear-gradient(var(--c),var(--c)) 12px 18px/4px 10px no-repeat;
+  filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 2px #000) drop-shadow(0 0 1px #000)}
+#cross.hit{--c:#ff3b30;transform:scale(1.35)}
+#ret .rt{filter:drop-shadow(0 0 .35vh #ff2a1a)}
 #scope{position:absolute;inset:0;opacity:0;background:radial-gradient(circle at center,transparent 35%,rgba(0,0,0,.6) 100%)}
 #dot{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#ff2a2a;box-shadow:0 0 6px 2px rgba(255,40,40,.8);opacity:0}
 #bars{position:absolute;left:24px;bottom:24px;width:280px}
@@ -55,7 +58,7 @@ button.sel{background:var(--ice);color:var(--bg)}
 #fps{position:absolute;top:16px;right:20px;font-size:20px;color:var(--steel)}
 #scope.snp{background:radial-gradient(circle closest-side at center,transparent 88%,#000 88.6%)}
 #sfr{position:absolute;pointer-events:none;opacity:0;left:50%;top:50%}
-#sfr.iron{left:0;top:0;width:100%;height:100%;background:radial-gradient(circle closest-side at center,transparent 20%,rgba(10,10,10,.97) 21%,rgba(10,10,10,.97) 34%,rgba(10,10,10,.55) 52%,transparent 78%)}
+#sfr.iron{width:0;height:0}
 #sfr.dot{width:0;height:0}
 #sfr.x2{width:112vh;height:62vh;margin:-31vh 0 0 -56vh;border-radius:9vh;box-shadow:0 0 0 200vmax #000,inset 0 0 0 5px #111,inset 0 0 36px rgba(0,0,0,.65)}
 #sfr.x3{width:98vh;height:56vh;margin:-28vh 0 0 -49vh;border-radius:10vh;box-shadow:0 0 0 200vmax #000,inset 0 0 0 5px #111,inset 0 0 36px rgba(0,0,0,.65)}
@@ -196,7 +199,7 @@ const LEG={
   octane:{n:'オクタン',d:'Q: 4秒間 移動速度1.5倍 / パッシブ: 自動回復(CT 10秒)',cd:10}
 };
 let pick='wraith',pickW=0,fpsCap=60,lite=false;
-const S={sens:1,ads:.5,zoom:1,fov:75,gsens:1,vol:.6,optic:'dot'};
+const S={sens:1,ads:.5,zoom:1,fov:75,gsens:1,vol:.6,optic:'dot',aa:.5};
 try{Object.assign(S,JSON.parse(localStorage.getItem('apexSet')||'{}'));}catch(e){}
 const saveS=()=>{try{localStorage.setItem('apexSet',JSON.stringify(S));}catch(e){}};
 function drawLegends(){
@@ -232,7 +235,7 @@ function drawOpts(){
 }
 const setT=(el,t)=>{t=String(t);if(el.textContent!==t)el.textContent=t;};
 const hpI=$('hp').firstChild,shI=$('sh').firstChild,amE=$('am'),rlE=$('reload'),waveE=$('wave'),killE=$('kills'),abE=$('abil'),bossE=$('boss'),invE=$('inv'),fpsE=$('fps');
-const SLD=[['sens','マウス感度',.2,3,.05,v=>v.toFixed(2)],['ads','スコープ中の感度(通常比)',.2,1.5,.05,v=>v.toFixed(2)],['zoom','スコープ倍率',.5,2,.05,v=>v.toFixed(2)+'倍'],['fov','視野角(FOV)',60,110,1,v=>v+'°'],['gsens','スティック感度',.3,2.5,.05,v=>v.toFixed(2)],['vol','足音の音量',0,1,.05,v=>Math.round(v*100)+'%']];
+const SLD=[['sens','マウス感度',.2,3,.05,v=>v.toFixed(2)],['ads','スコープ中の感度(通常比)',.2,1.5,.05,v=>v.toFixed(2)],['zoom','スコープ倍率',.5,2,.05,v=>v.toFixed(2)+'倍'],['fov','視野角(FOV)',60,110,1,v=>v+'°'],['gsens','スティック感度',.3,2.5,.05,v=>v.toFixed(2)],['vol','足音の音量',0,1,.05,v=>Math.round(v*100)+'%'],['aa','エイムアシストの強さ(コントローラ)',0,1,.05,v=>v.toFixed(2)]];
 function drawSliders(){
   const b=$('sliders');b.replaceChildren();
   SLD.forEach(([k,n,mn,mx,st,f])=>{
@@ -269,12 +272,13 @@ $('keysReset').onclick=()=>{Object.assign(KB,KD);saveK();rebind=null;drawKeys();
 function clearKeys(){for(const k in keys)keys[k]=0;}   // キーが押しっぱなし扱いになるバグ対策
 let EID=0;
 /* ---- スコープ(アイアンサイト・ドット・2倍・3倍) ---- */
+let OAM=null;
 const OPT={iron:{n:'アイアンサイト',z:1.15},dot:{n:'ドットサイト(1倍)',z:1.3},x2:{n:'2倍スコープ',z:2},x3:{n:'3倍スコープ',z:3}};
 const RET={
- iron:'<svg viewBox="-50 -50 100 100"><path d="M-1.6,-16L1.6,-16L1.2,3L-1.2,3Z" fill="#0b0b0b"/><circle r="1.1" cy="-17" fill="#0b0b0b"/></svg>',
- dot:'<svg viewBox="-50 -50 100 100"><g fill="none" stroke="#ff3b30" stroke-width=".5"><circle r="9"/><path d="M0,-9V-12M0,9V12M-9,0H-12M9,0H12"/></g><circle r=".9" fill="#ff3b30"/></svg>',
- x2:'<svg viewBox="-50 -50 100 100"><g stroke="#ff3b30" stroke-width=".55" fill="none"><path d="M-7,5L0,-1.5L7,5"/><path d="M-30,0H-9M9,0H30"/><path d="M0,9V30"/><path d="M-2.2,14H2.2M-3.2,20H3.2M-4.2,26H4.2"/></g><circle r=".8" fill="#ff3b30"/></svg>',
- x3:'<svg viewBox="-50 -50 100 100"><g stroke="#ff3b30" stroke-width=".45" fill="none"><circle r="2.4"/><path d="M0,-30V-5M0,5V30M-30,0H-5M5,0H30"/><path d="M-1.6,-12H1.6M-1.6,-20H1.6M-1.6,12H1.6M-1.6,20H1.6M-12,-1.6V1.6M-20,-1.6V1.6M12,-1.6V1.6M20,-1.6V1.6"/></g><circle r=".6" fill="#ff3b30"/></svg>',
+ iron:'<svg viewBox="-50 -50 100 100"><defs><linearGradient id="gi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2a2d"/><stop offset=".25" stop-color="#18181a"/><stop offset="1" stop-color="#08080a"/></linearGradient></defs><path d="M-18,50L-18,-1Q-17.5,-4.6 -14,-4.6L-9.8,-4.6Q-9,-4.6 -8.8,-2L-8,6Q-7.6,10.5 -3.5,10.5L3.5,10.5Q7.6,10.5 8,6L8.8,-2Q9,-4.6 9.8,-4.6L14,-4.6Q17.5,-4.6 18,-1L18,50Z" fill="url(#gi)" stroke="#3c3c42" stroke-width=".35"/><circle cx="-20" cy="24" r="3.8" fill="#111" stroke="#4a4a50" stroke-width=".4" stroke-dasharray=".7 .5"/><circle cx="-21" cy="41" r="3.2" fill="#111" stroke="#4a4a50" stroke-width=".4" stroke-dasharray=".7 .5"/><ellipse cx="0" cy="15.5" rx="10" ry="2.4" fill="none" stroke="#55555c" stroke-width=".35"/><path d="M-3.4,-7Q-3.1,-1 -.7,3M3.4,-7Q3.1,-1 .7,3" fill="none" stroke="#0b0b0b" stroke-width="1"/><rect x="-.9" y="-1" width="1.8" height="9" fill="#0b0b0b"/><rect x="-13" y="33" width="26" height="9.5" rx="1.2" fill="#bfe6ee"/><text id="oam" x="0" y="40.3" text-anchor="middle" font-size="6" font-weight="700" fill="#16323a" font-family="sans-serif">30</text></svg>',
+ dot:'<svg viewBox="-50 -50 100 100"><defs><linearGradient id="gd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#55503c"/><stop offset=".5" stop-color="#3a3729"/><stop offset="1" stop-color="#242219"/></linearGradient></defs><path fill-rule="evenodd" d="M-27,50L-27,-12Q-27,-16.5 -22,-16.5L-4,-16.5L-2.5,-18L2.5,-18L4,-16.5L22,-16.5Q27,-16.5 27,-12L27,50Z M-20.8,-8.7Q-20.8,-11.7 -17.8,-11.7L17.8,-11.7Q20.8,-11.7 20.8,-8.7L20.8,15Q20.8,18 17.8,18L-17.8,18Q-20.8,18 -20.8,15Z" fill="url(#gd)" stroke="#16150f" stroke-width=".4"/><rect x="-22.5" y="23.5" width="45" height="10" rx="2.2" fill="#10131a" stroke="#a9cfe0" stroke-width=".7"/><text id="oam" x="0" y="31.4" text-anchor="middle" font-size="7.2" font-weight="700" fill="#e8f6ff" font-family="sans-serif">30</text><circle cx="-24.5" cy="40" r="1.5" fill="#6b6857"/><circle cx="24.5" cy="40" r="1.5" fill="#6b6857"/><circle cx="-24.5" cy="46" r="1.5" fill="#6b6857"/><circle cx="24.5" cy="46" r="1.5" fill="#6b6857"/><path d="M0,-6.6V-1.8M0,1.8V6.6M-6.6,0H-1.8M1.8,0H6.6" stroke="#000" stroke-width="2.3" stroke-linecap="round" opacity=".55"/><g class="rt" stroke="#ff2a1a" stroke-width="1.15" stroke-linecap="round"><path d="M0,-6.6V-1.8M0,1.8V6.6M-6.6,0H-1.8M1.8,0H6.6"/></g><circle r="1" fill="#ff2a1a"/></svg>',
+ x2:'<svg viewBox="-50 -50 100 100"><g class="rt" stroke="#ff2a1a" stroke-width="1" fill="none"><path d="M-7,5L0,-1.5L7,5"/><path d="M-30,0H-9M9,0H30"/><path d="M0,9V30"/><path d="M-2.2,14H2.2M-3.2,20H3.2M-4.2,26H4.2"/></g><circle r=".8" fill="#ff3b30"/></svg>',
+ x3:'<svg viewBox="-50 -50 100 100"><g class="rt" stroke="#ff2a1a" stroke-width=".9" fill="none"><circle r="2.4"/><path d="M0,-30V-5M0,5V30M-30,0H-5M5,0H30"/><path d="M-1.6,-12H1.6M-1.6,-20H1.6M-1.6,12H1.6M-1.6,20H1.6M-12,-1.6V1.6M-20,-1.6V1.6M12,-1.6V1.6M20,-1.6V1.6"/></g><circle r=".6" fill="#ff3b30"/></svg>',
  snp:'<svg viewBox="-50 -50 100 100"><g stroke="#0a0a0a" fill="none"><path stroke-width=".25" d="M0,-44V-3M0,3V44M-44,0H-3M3,0H44"/><path stroke-width="1.6" d="M0,-44V-20M0,20V44M-44,0H-20M20,0H44"/></g><g fill="#0a0a0a"><circle cx="-8" r=".5"/><circle cx="8" r=".5"/><circle cx="-14" r=".5"/><circle cx="14" r=".5"/><circle cy="8" r=".5"/><circle cy="14" r=".5"/><circle cy="20" r=".5"/></g><circle r=".5" fill="#ff3b30"/></svg>'
 };
 function applyOptic(){
@@ -282,7 +286,7 @@ function applyOptic(){
   guns.forEach(o=>{if(o.og)for(const k in o.og)o.og[k].visible=(k===S.optic);});
   $('scope').className=sn?'snp':'';
   $('sfr').className=sn?'hide':S.optic;
-  $('ret').innerHTML=sn?RET.snp:RET[S.optic];
+  $('ret').innerHTML=sn?RET.snp:RET[S.optic];OAM=$('oam');
 }
 function drawOptics(){
   for(const id of ['optBox','pauseO','menuO']){
@@ -438,28 +442,31 @@ function drawPad(){
 }
 $('padReset').onclick=()=>{Object.assign(PB,PD);saveP();padBind=null;drawPad();};
 addEventListener('gamepadconnected',drawPad);addEventListener('gamepaddisconnected',drawPad);
-function aimAssist(dt){   // エイムアシスト(強さ0.5): 敵に近いと照準が少し吸い付き、スティック感度が下がる
-  const A=.5;
-  if(P.un||!(adsHeld||fire))return 1;
+function aimAssist(dt,rx,ry){   // Apex風: 敵のまわりの「範囲」に入ると照準が遅くなり、敵が動くとスティック操作に合わせて追従する
+  const A=S.aa;
+  if(A<=0||P.un)return 1;
+  const wr=a=>Math.atan2(Math.sin(a),Math.cos(a));
   const ox=cam.position.x,oy=cam.position.y,oz=cam.position.z,cp=Math.cos(P.pitch);
   const fx=-Math.sin(P.yaw)*cp,fy=Math.sin(P.pitch),fz=-Math.cos(P.yaw)*cp;
-  let best=null,bd=.16;
-  const list=enemies.filter(e=>!e.opp&&!e.remote||e.remote);
-  if(D.opp&&G.mode==='duel')list.push(D.opp.e);
+  let best=null,bs=1;
+  const list=enemies.slice();if(D.opp&&G.mode==='duel')list.push(D.opp.e);
   for(const e of list){
-    const q=e.g.position,dx=q.x-ox,dy=q.y+1.1*(e.boss?1.7:1)-oy,dz=q.z-oz,d=Math.hypot(dx,dy,dz);
-    if(d<2||d>60)continue;
-    const ang=Math.acos(Math.max(-1,Math.min(1,(dx*fx+dy*fy+dz*fz)/d)));
-    if(ang<bd){bd=ang;best={dx,dy,dz,d};}
+    const q=e.g.position,sc=e.boss?1.7:1,dx=q.x-ox,dy=q.y+1.1*sc-oy,dz=q.z-oz,d=Math.hypot(dx,dy,dz);
+    if(d<2||d>70)continue;
+    const ang=Math.acos(Math.max(-1,Math.min(1,(dx*fx+dy*fy+dz*fz)/d))),zone=Math.min(.24,Math.max(.04,Math.atan(1.3*sc/d)+.025)),r=ang/zone;   // 近いほど範囲が広い
+    if(r<bs){bs=r;best={e,dx,dy,dz,d};}
   }
   if(!best)return 1;
   dir.set(best.dx/best.d,best.dy/best.d,best.dz/best.d);org.set(ox,oy,oz);rc.set(org,dir);rc.far=best.d;
   if(rc.intersectObjects(boxMeshes,false).length)return 1;   // 壁ごしには効かない
-  const ty=Math.atan2(-best.dx,-best.dz),tp=Math.asin(best.dy/best.d);
-  let da=ty-P.yaw;da=Math.atan2(Math.sin(da),Math.cos(da));
-  const near=1-bd/.16,pull=A*Math.min(1,dt*4)*near;
-  P.yaw+=da*pull;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch+(tp-P.pitch)*pull));
-  return 1-A*.5*near;
+  const e=best.e,ty=Math.atan2(-best.dx,-best.dz),tp=Math.asin(best.dy/best.d),depth=1-bs,now=performance.now();
+  let dyw=0,dpt=0;
+  if(e._at&&now-e._at<120){dyw=wr(ty-e._ay);dpt=tp-e._ap;}
+  e._ay=ty;e._ap=tp;e._at=now;
+  const rot=A*Math.min(1,Math.hypot(rx||0,ry||0)*3)*depth;   // 回転アシスト: スティックを動かすと敵の動きについていく
+  P.yaw+=dyw*rot;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch+dpt*rot));
+  if(adsHeld||fire){const pull=A*.5*Math.min(1,dt*5)*depth;P.yaw+=wr(ty-P.yaw)*pull;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch+(tp-P.pitch)*pull));}   // 構え・射撃中は少し吸い付く
+  return 1-A*.9*Math.pow(depth,.6);   // スローダウン: 範囲の中心ほど遅くなる
 }
 function trySlide(){
   if(P.ground&&P.slide<=0&&P.climbT<=0&&G.cd<=0&&(keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||P.gx||P.gy)){P.slide=1.4;const s0=Math.max(13,Math.hypot(P.vx,P.vz));P.vx=P.lx*s0;P.vz=P.lz*s0;}
@@ -479,7 +486,7 @@ function padPoll(dt){
   P.gx=play?lx:0;P.gy=play?ly:0;
   if(!play)return;
   const k=(1+(S.ads-1)*P.adsT)*S.gsens,W=WP[P.w];
-  const as=aimAssist(dt);P.yaw-=rx*dt*3.2*k*as;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch-ry*dt*2.4*k*as));
+  const as=aimAssist(dt,rx,ry);P.yaw-=rx*dt*3.2*k*as;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch-ry*dt*2.4*k*as));
   const trig=bt(PB.fire);if(trig&&(W.auto||P.un||!padF))fire=true;else if(!trig&&padF)fire=false;padF=trig;
   const a2=bt(PB.ads);if(a2)adsHeld=true;else if(padA)adsHeld=false;padA=a2;
   const j=bt(PB.jump);if(j&&!padJ){keys.Space=1;P.jp=true;}if(!j&&padJ)keys.Space=0;padJ=j;
@@ -1045,12 +1052,14 @@ function update(dt){
   lh.position.set(0,-.09*k1,.24*k1);
   gun.visible=P.climbT<=0&&!P.un&&!(P.w===2&&P.adsT>.6);arms.visible=P.climbT>0||P.un||P.punchT>0;
   {const og=guns[P.w]&&guns[P.w].og;if(og)for(const k in og)og[k].visible=(k===S.optic&&P.adsT<.6);}   // 構え中はオーバーレイ側で照準を表示
+  if(OAM)setT(OAM,P.un?'':P.ammo);
+  if(P.adsT>.6)gun.visible=false;
   if(P.climbT>0){const t=1-P.climbT/.55;arms.position.set(0,-.5+.5*t,-.05);}
   else if(P.un||P.punchT>0){const ps=P.punchT>0?Math.sin(Math.PI*(1-P.punchT/.25)):0;arms.position.set((P.pa?1:-1)*.1*ps,-.52+Math.sin(performance.now()/110)*.03*Math.min(1,spd2/9)*(P.ground?1:0)+.05*ps,-.05-.45*ps);}
   if(P.dead&&G.mode==='coop'){const o=D.opp;if(o&&!o.dead){cam.position.set(o.e.g.position.x,o.e.g.position.y+1.7,o.e.g.position.z);cam.rotation.set(0,o.tyaw,0);}gun.visible=false;arms.visible=false;}   // 観戦
   P.jp=false;
   if(P.flashT>0){P.flashT-=dt;if(P.flashT<=0)flash.visible=false;}
-  $('dot').style.opacity=0;$('scope').style.opacity=P.adsT;$('sfr').style.opacity=P.adsT;$('ret').style.opacity=P.adsT>.85?1:0;$('cross').style.visibility=P.adsT>.05?'hidden':'visible';
+  $('dot').style.opacity=0;$('scope').style.opacity=P.adsT;$('sfr').style.opacity=P.adsT;$('ret').style.opacity=Math.max(0,Math.min(1,(P.adsT-.5)*2));$('cross').style.visibility=P.adsT>.05?'hidden':'visible';
   // 無敵・自動回復・HUD
   if(G.cd>0){G.cd=Math.max(0,G.cd-dt);if(G.cd<=0)G.goT=.8;}else if(G.goT>0)G.goT-=dt;
   setT(cdE,G.cd>0?Math.ceil(G.cd):G.goT>0?'START!':'');

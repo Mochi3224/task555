@@ -13,6 +13,8 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ice);font-family
 canvas{display:block}
 .ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(12,15,22,.92);z-index:10;text-align:center;padding:20px}
 .hide{display:none!important}
+.sl{display:flex;flex-direction:column;gap:2px;margin:10px 0;color:var(--ice)}
+.sl input{width:min(320px,75vw);accent-color:var(--red)}
 h1{font-size:clamp(40px,8vw,84px);margin:0;font-weight:700;line-height:1;letter-spacing:-1px;transform:skewX(-8deg)}
 h1 b{color:var(--red)}
 p{margin:0;color:var(--steel)}
@@ -53,7 +55,7 @@ button.sel{background:var(--ice);color:var(--bg)}
 <div id="login" class="ov">
   <h1>APEX <b>ARENA</b></h1>
   <p>3Dアリーナで敵部隊を倒し続けよう。戦績はアカウントに保存されます。</p>
-  <button id="btnLogin">Googleでログイン</button>
+  <div class="row"><button id="btnLogin">Googleでログイン</button><button id="btnSetLogin" class="alt">設定</button></div>
   <p id="loginErr"></p>
 </div>
 
@@ -63,13 +65,20 @@ button.sel{background:var(--ice);color:var(--bg)}
   <div class="row" id="legends"></div>
   <p id="legDesc"></p>
   <p>武器を選択</p><div class="row" id="weapons"></div>
-  <p>設定(FPS上限・軽量化)</p><div class="row" id="opts"></div>
-  <div class="row"><button id="btnStart">出撃</button><button id="btnOut" class="alt">ログアウト</button></div>
+  <div class="row"><button id="btnStart">出撃</button><button id="btnSetMenu" class="alt">設定</button><button id="btnOut" class="alt">ログアウト</button></div>
   <div class="card"><b>ランキング(最多キル)</b><ol id="board"></ol></div>
-  <p>WASD 移動(Wで徐々に加速) / Shift しゃがみ・スライディング(滑り中もジャンプ可) / Space ジャンプ・空中でマウスを回しながらA/Dでストレイフ / 壁の前でW+Spaceで壁登り→登り中にSpaceでブースト / 空中で壁に触れてSpaceを押し直すと壁ジャンプ / 左クリック 射撃 / 右クリック スコープ / 1:アサルト 2:SMG 4:スナイパー / 3:素手(1.3倍速)⇔武器を出す / R リロード / Q アビリティ</p>
+  <p>WASD 移動(Wで徐々に加速) / Shift しゃがみ・スライディング(滑り中もジャンプ可) / Space ジャンプ・空中でマウスを回しながらA/Dでストレイフ / 壁の前でW+Spaceで壁登り→登り中にSpaceでブースト / 空中で壁に触れてSpaceを押し直すと壁ジャンプ / 左クリック 射撃 / 右クリック スコープ / 1:アサルト 2:SMG 4:スナイパー / 3:素手(1.3倍速)⇔武器を出す / R リロード / Q アビリティ / ESC 一時停止(再開・設定・タイトル)</p>
 </div>
 
-<div id="pause" class="ov hide"><h1>PAUSE</h1><p>クリックして再開</p></div>
+<div id="pause" class="ov hide"><h1>PAUSE</h1>
+  <div class="row"><button id="btnResume">再開</button><button id="btnPSet" class="alt">設定</button><button id="btnTitle" class="alt">タイトルへ</button></div>
+  <p>タイトルへ戻ると、ここまでの戦績が保存されます</p></div>
+<div id="settings" class="ov hide" style="z-index:20">
+  <h1>設定</h1>
+  <div id="sliders" class="card"></div>
+  <p>FPS上限・軽量化</p><div class="row" id="opts"></div>
+  <button id="btnSetClose">閉じる</button>
+</div>
 
 <div id="over" class="ov hide">
   <h1>DOWNED</h1>
@@ -153,6 +162,9 @@ const LEG={
   octane:{n:'オクタン',d:'Q: 4秒間 移動速度1.5倍 / パッシブ: 自動回復(CT 10秒)',cd:10}
 };
 let pick='wraith',pickW=0,fpsCap=60,lite=false;
+const S={sens:1,ads:.5,zoom:1,fov:75};
+try{Object.assign(S,JSON.parse(localStorage.getItem('apexSet')||'{}'));}catch(e){}
+const saveS=()=>{try{localStorage.setItem('apexSet',JSON.stringify(S));}catch(e){}};
 function drawLegends(){
   const box=$('legends');box.replaceChildren();
   for(const k in LEG){const b=document.createElement('button');b.textContent=LEG[k].n;b.className=k===pick?'sel':'alt';
@@ -175,12 +187,25 @@ function drawOpts(){
 }
 const setT=(el,t)=>{t=String(t);if(el.textContent!==t)el.textContent=t;};
 const hpI=$('hp').firstChild,shI=$('sh').firstChild,amE=$('am'),rlE=$('reload'),waveE=$('wave'),killE=$('kills'),abE=$('abil'),bossE=$('boss'),invE=$('inv'),fpsE=$('fps');
-drawWeapons();drawOpts();
+const SLD=[['sens','マウス感度',.2,3,.05,v=>v.toFixed(2)],['ads','スコープ中の感度(通常比)',.2,1.5,.05,v=>v.toFixed(2)],['zoom','スコープ倍率',.5,2,.05,v=>v.toFixed(2)+'倍'],['fov','視野角(FOV)',60,110,1,v=>v+'°']];
+function drawSliders(){
+  const b=$('sliders');b.replaceChildren();
+  SLD.forEach(([k,n,mn,mx,st,f])=>{
+    const w=document.createElement('label'),t=document.createElement('span'),i=document.createElement('input');
+    w.className='sl';i.type='range';i.min=mn;i.max=mx;i.step=st;i.value=S[k];
+    const upd=()=>{t.textContent=`${n}: ${f(+i.value)}`;};upd();
+    i.oninput=()=>{S[k]=+i.value;upd();saveS();if(k==='fov'){cam.fov=S.fov;cam.updateProjectionMatrix();}};
+    w.append(t,i);b.appendChild(w);
+  });
+}
+$('btnSetLogin').onclick=$('btnSetMenu').onclick=$('btnPSet').onclick=()=>show('settings',1);
+$('btnSetClose').onclick=()=>show('settings',0);
+drawWeapons();drawOpts();drawSliders();
 
 /* ---------- 3Dシーン ---------- */
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x9cc3e6);scene.fog=new THREE.Fog(0x9cc3e6,35,130);
-const cam=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,.1,200);
+const cam=new THREE.PerspectiveCamera(S.fov,innerWidth/innerHeight,.1,200);
 cam.rotation.order='YXZ';scene.add(cam);
 const ren=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});
 ren.setSize(innerWidth,innerHeight);ren.setPixelRatio(Math.min(devicePixelRatio,1.25));
@@ -283,7 +308,7 @@ const mFace=tex(x=>{noise(x,'#c99b78',40);x.fillStyle='#fff';x.fillRect(14,24,12
 const coneGeo=new THREE.ConeGeometry(.16,.3,4),mkMat=new THREE.MeshBasicMaterial({color:0xff3b2e}),mkBoss=new THREE.MeshBasicMaterial({color:0xb04bff});
 const bulletGeo=(()=>{const g=new THREE.CylinderGeometry(.045,.045,1.2,6);g.rotateX(Math.PI/2);return g;})(),bulletMat=new THREE.MeshBasicMaterial({color:0xff4a2a,fog:false});
 function spawnEnemy(boss){
-  const g=new THREE.Group(),b=new THREE.Group(),e={g,b,boss:!!boss,hits:15,hp:100,cd:1+Math.random()*1.5,side:1,sT:0,jT:2+Math.random()*3,slide:0,vx:0,vz:0,vy:0,ground:true,meshes:[]};
+  const g=new THREE.Group(),b=new THREE.Group(),e={g,b,boss:!!boss,hits:15,hp:Math.round(100*(1+(P.wave-1)*.1)),cd:1+Math.random()*1.5,side:1,sT:0,jT:2+Math.random()*3,slide:0,vx:0,vz:0,vy:0,ground:true,meshes:[]};
   g.add(b);
   const add=(geo,mat,x,y,z,head,par)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.userData={enemy:e,head:!!head};(par||b).add(m);e.meshes.push(m);return m;};
   add(B(.52,.62,.3),mVest,0,1.2,0);
@@ -301,7 +326,7 @@ function spawnEnemy(boss){
 function nextWave(){
   P.wave++;P.sh=Math.min(50,P.sh+30);P.hp=Math.min(100,P.hp+20);
   const boss=P.wave%5===0;for(let i=0;i<Math.min(2+P.wave,9);i++)spawnEnemy();if(boss)spawnEnemy(true);
-  banner(boss?`ウェーブ ${P.wave} — BOSS出現!`:`ウェーブ ${P.wave}`);
+  banner(boss?`ウェーブ ${P.wave} — BOSS出現!`:P.wave>1?`ウェーブ ${P.wave} — 敵が強化された`:`ウェーブ ${P.wave}`);
 }
 function banner(t){const b=$('banner');b.textContent=t;b.style.opacity=1;setTimeout(()=>b.style.opacity=0,1600);}
 
@@ -323,17 +348,27 @@ function startGame(){
   ren.domElement.requestPointerLock();
 }
 $('btnStart').onclick=startGame;
-$('pause').onclick=()=>ren.domElement.requestPointerLock();
+const lockIt=(n=0)=>{show('settings',0);try{const r=ren.domElement.requestPointerLock();if(r&&r.catch)r.catch(()=>{if(n<5)setTimeout(()=>lockIt(n+1),400);});}catch(e){}};
+$('btnResume').onclick=()=>lockIt();
+$('btnTitle').onclick=async()=>{
+  G.running=false;G.over=true;adsHeld=false;fire=false;cam.fov=S.fov;cam.updateProjectionMatrix();
+  enemies.forEach(e=>scene.remove(e.g));enemies=[];bullets.forEach(q=>scene.remove(q.m));bullets=[];
+  show('pause',0);show('settings',0);show('hud',0);show('menu',1);
+  if(P.wave>0)await saveResult(P.kills,P.wave);
+  await loadProfile();loadBoard();
+};
 $('btnBack').onclick=async()=>{show('over',0);show('menu',1);await loadProfile();loadBoard();};
 
 document.addEventListener('pointerlockchange',()=>{
   locked=document.pointerLockElement===ren.domElement;
+  if(locked)show('settings',0);
+  if(!locked){fire=false;adsHeld=false;}
   if(G.running&&!G.over)show('pause',!locked);
 });
 addEventListener('mousemove',e=>{
   if(!locked)return;
   if(Math.abs(e.movementX)>300||Math.abs(e.movementY)>300)return;   // 異常な視点ジャンプを無視
-  const k=.0022*(1-.5*P.adsT);P.sw=Math.max(-.08,Math.min(.08,P.sw+e.movementX*.0006));P.yaw-=e.movementX*k;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch-e.movementY*k));
+  const k=.0022*S.sens*(1+(S.ads-1)*P.adsT);P.sw=Math.max(-.08,Math.min(.08,P.sw+e.movementX*.0006));P.yaw-=e.movementX*k;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch-e.movementY*k));
 });
 addEventListener('mousedown',e=>{if(e.button===0)fire=true;if(e.button===2)adsHeld=true;});
 addEventListener('mouseup',e=>{if(e.button===0)fire=false;if(e.button===2)adsHeld=false;});
@@ -389,7 +424,7 @@ function shoot(){
   tracer(from,end,0xffe27a);
 }
 async function die(){
-  G.over=true;G.running=false;adsHeld=false;fire=false;cam.fov=75;cam.updateProjectionMatrix();
+  G.over=true;G.running=false;adsHeld=false;fire=false;cam.fov=S.fov;cam.updateProjectionMatrix();
   document.exitPointerLock();show('hud',0);show('pause',0);show('over',1);
   $('result').textContent=`ウェーブ ${P.wave} / キル ${P.kills}`;
   await saveResult(P.kills,P.wave);
@@ -447,7 +482,7 @@ function update(dt){
   // 敵
   const eye=new THREE.Vector3(P.pos.x,P.pos.y+P.eye-.1,P.pos.z);
   for(const e of enemies){
-    const p=e.g.position,dx=P.pos.x-p.x,dz=P.pos.z-p.z,d=Math.hypot(dx,dz)||1,spd=Math.min(6,3.5+P.wave*.25)*(e.boss?.7:1);
+    const p=e.g.position,dx=P.pos.x-p.x,dz=P.pos.z-p.z,d=Math.hypot(dx,dz)||1,spd=Math.min(8,3.5+P.wave*.3)*(e.boss?.7:1);
     e.sT-=dt;if(e.sT<=0){e.sT=.5+Math.random();e.side=-e.side;}          // ストレイフ切替
     if(e.ground){
       e.jT-=dt;
@@ -455,7 +490,7 @@ function update(dt){
       else{
         const fw=d>16?1:d<8?-1:0,tx=dx/d*fw-dz/d*e.side*.9,tz=dz/d*fw+dx/d*e.side*.9,a=Math.min(1,dt*8);
         e.vx+=(tx*spd-e.vx)*a;e.vz+=(tz*spd-e.vz)*a;
-        if(e.jT<=0&&!e.boss&&Math.random()<dt*2){e.jT=2+Math.random()*3;
+        if(e.jT<=0&&!e.boss&&Math.random()<dt*2){e.jT=(2+Math.random()*3)*Math.max(.45,1-P.wave*.04);
           if(Math.random()<.5){e.vy=7.5;e.ground=false;e.vx*=1.3;e.vz*=1.3;}            // ジャンプ
           else if(d<26){e.slide=.9;e.vx=tx*13;e.vz=tz*13;}}                               // スライディング
       }
@@ -471,19 +506,19 @@ function update(dt){
     e.legs[0].rotation.x=sw*.8;e.legs[1].rotation.x=-sw*.8;
     e.cd-=dt;
     if(e.cd<=0&&d<45){
-      e.cd=(1+Math.random()*.8)*(e.boss?.7:1);
-      const o=new THREE.Vector3(p.x,p.y+1.35*(e.boss?1.7:1),p.z),t=d/38,v=eye.clone().add(new THREE.Vector3(P.vx*t*.6,0,P.vz*t*.6)).sub(o).normalize();
+      e.cd=(1+Math.random()*.8)*Math.max(.4,1-P.wave*.04)*(e.boss?.7:1);
+      const bsp=Math.min(56,34+P.wave*1.2),o=new THREE.Vector3(p.x,p.y+1.35*(e.boss?1.7:1),p.z),t=d/bsp,v=eye.clone().add(new THREE.Vector3(P.vx*t*.6,0,P.vz*t*.6)).sub(o).normalize();
       rc.set(o,v);rc.far=d;
       if(rc.intersectObjects(boxMeshes,false).length===0){
-        v.x+=(Math.random()-.5)*.05;v.y+=(Math.random()-.5)*.05;v.z+=(Math.random()-.5)*.05;v.normalize();
+        const ac=Math.max(.012,.06-P.wave*.004);v.x+=(Math.random()-.5)*ac;v.y+=(Math.random()-.5)*ac;v.z+=(Math.random()-.5)*ac;v.normalize();
         const m=new THREE.Mesh(bulletGeo,bulletMat);m.position.copy(o);if(e.boss)m.scale.setScalar(1.8);m.lookAt(o.clone().add(v));scene.add(m);
-        bullets.push({m,v:v.multiplyScalar(38),t:3,boss:e.boss});            // 目に見える弾
+        bullets.push({m,v:v.multiplyScalar(bsp),t:3,boss:e.boss});            // 目に見える弾
       }
     }
   }
   for(const q of bullets){
     const bp=q.m.position;bp.addScaledVector(q.v,dt);q.t-=dt;
-    if(Math.abs(bp.x-P.pos.x)<.5&&Math.abs(bp.z-P.pos.z)<.5&&bp.y>P.pos.y&&bp.y<P.pos.y+P.eye+.1){q.t=0;dmgPlayer(Math.min(10,5+P.wave*.5)*(q.boss?1.3:1));}
+    if(Math.abs(bp.x-P.pos.x)<.5&&Math.abs(bp.z-P.pos.z)<.5&&bp.y>P.pos.y&&bp.y<P.pos.y+P.eye+.1){q.t=0;dmgPlayer(Math.min(22,5+P.wave*.7)*(q.boss?1.3:1));}
     else for(const {b} of boxes)if(bp.x>b.min.x&&bp.x<b.max.x&&bp.y>b.min.y&&bp.y<b.max.y&&bp.z>b.min.z&&bp.z<b.max.z){q.t=0;break;}
   }
   bullets=bullets.filter(q=>{if(q.t<=0){scene.remove(q.m);return false;}return true;});
@@ -496,7 +531,7 @@ function update(dt){
   P.roll+=((-r*.035+((P.slide>0||P.sj)?.07:0))-P.roll)*Math.min(1,dt*8);
   cam.rotation.set(P.pitch,P.yaw,P.roll);
   P.adsT+=(((adsHeld&&!P.reload&&P.climbT<=0&&!P.un)?1:0)-P.adsT)*Math.min(1,dt*12);
-  const fv=75-(75-WP[P.w].zf)*P.adsT+Math.min(8,Math.max(0,spd2-9));if(Math.abs(fv-cam.fov)>.05){cam.fov=fv;cam.updateProjectionMatrix();}
+  const zf=Math.max(8,Math.min(S.fov-5,WP[P.w].zf/S.zoom)),fv=S.fov-(S.fov-zf)*P.adsT+Math.min(8,Math.max(0,spd2-9));if(Math.abs(fv-cam.fov)>.05){cam.fov=fv;cam.updateProjectionMatrix();}
   const L=(a,b)=>a+(b-a)*P.adsT,bob=hb*.4*(1-P.adsT);
   const u=P.reload>0?1-P.reload/P.rt:0,k1=u<.2?u/.2:u>.8?(1-u)/.2:1;   // リロード進行
   gun.position.set(L(.22,0),L(-.2,-.0945)+bob-.06*k1-.35*P.eq,L(-.5,-.34)+P.kick*1.5);
@@ -515,7 +550,7 @@ function update(dt){
   const W=WP[P.w];
   hpI.style.width=Math.max(0,P.hp)+'%';shI.style.width=P.sh*2+'%';invE.style.opacity=P.inv>0?1:0;
   setT(amE,P.un?'—':P.ammo);setT(rlE,P.un?'素手 速度1.3倍(3キーで武器)':P.reload?'リロード中…':`${W.n}  ${W.mag}発`);
-  setT(waveE,`ウェーブ ${P.wave}`);setT(killE,`キル ${P.kills}`);
+  setT(waveE,`ウェーブ ${P.wave}  敵Lv.${P.wave}`);setT(killE,`キル ${P.kills}`);
   setT(abE,`${LEG[G.legend].n}  Q: ${P.cd>0?Math.ceil(P.cd)+'秒':'使用可能'}${P.inv>0?'  無敵!':''}`);
   const bs=enemies.find(e=>e.boss);setT(bossE,bs?`BOSS ${'■'.repeat(bs.hits)}${'□'.repeat(15-bs.hits)}`:'');
 }

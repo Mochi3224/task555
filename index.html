@@ -13,6 +13,8 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ice);font-family
 canvas{display:block}
 .ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(12,15,22,.92);z-index:10;text-align:center;padding:20px}
 .hide{display:none!important}
+details summary{cursor:pointer;font-weight:700;padding:4px 0}
+details[open] summary{margin-bottom:8px}
 #spec{position:absolute;bottom:18%;left:0;right:0;text-align:center;font-size:28px;color:#d9a8ff}
 .kr{display:flex;justify-content:space-between;align-items:center;gap:20px;margin:4px 0}
 .kr button{padding:6px 14px;min-width:130px;font-size:15px}
@@ -79,6 +81,7 @@ button.sel{background:var(--ice);color:var(--bg)}
 
 <div id="vs" class="ov hide">
   <h1>対戦</h1>
+  <p>レジェンドと武器を選択</p><div class="row" id="vsLegends"></div><div class="row" id="vsW"></div>
   <div id="vsMode" class="row"><button id="vsModeD" class="sel">1対1対戦</button><button id="vsModeC" class="alt">協力(ウェーブ・味方にダメージなし)</button></div>
   <div id="vsMenu" class="row"><button id="vsCreate">部屋を作る</button><input id="vsCode" class="code" maxlength="4" inputmode="numeric" placeholder="4桁コード"><button id="vsJoin" class="alt">参加</button></div>
   <button id="vsCpu" class="alt">オフライン対戦(CPUと1対1)</button>
@@ -90,12 +93,13 @@ button.sel{background:var(--ice);color:var(--bg)}
 </div>
 <div id="pause" class="ov hide"><h1>PAUSE</h1>
   <div class="row"><button id="btnResume">再開</button><button id="btnPSet" class="alt">設定</button><button id="btnTitle" class="alt">タイトルへ</button></div>
+  <p>武器を選ぶ</p><div class="row" id="pauseW"></div>
   <p>タイトルへ戻ると、ここまでの戦績が保存されます</p></div>
 <div id="settings" class="ov hide" style="z-index:20">
   <h1>設定</h1>
   <div id="sliders" class="card"></div>
-  <div id="keysBox" class="card"></div><button id="keysReset" class="alt">キー設定を初期化</button>
-  <div id="padBox" class="card"></div><button id="padReset" class="alt">コントローラ配置を初期化(Apex標準)</button>
+  <details class="card"><summary>キー設定(タップで開閉)</summary><div id="keysBox"></div><button id="keysReset" class="alt">キー設定を初期化</button></details>
+  <details class="card"><summary>コントローラ配置(タップで開閉)</summary><div id="padBox"></div><button id="padReset" class="alt">コントローラ配置を初期化(Apex標準)</button></details>
   <p>FPS上限・軽量化</p><div class="row" id="opts"></div>
   <button id="btnSetClose">閉じる</button>
 </div>
@@ -186,9 +190,11 @@ const S={sens:1,ads:.5,zoom:1,fov:75,gsens:1,vol:.6};
 try{Object.assign(S,JSON.parse(localStorage.getItem('apexSet')||'{}'));}catch(e){}
 const saveS=()=>{try{localStorage.setItem('apexSet',JSON.stringify(S));}catch(e){}};
 function drawLegends(){
-  const box=$('legends');box.replaceChildren();
-  for(const k in LEG){const b=document.createElement('button');b.textContent=LEG[k].n;b.className=k===pick?'sel':'alt';
-    b.onclick=()=>{pick=k;drawLegends();};box.appendChild(b);}
+  for(const id of ['legends','vsLegends']){
+    const box=$(id);box.replaceChildren();
+    for(const k in LEG){const b=document.createElement('button');b.textContent=LEG[k].n;b.className=k===pick?'sel':'alt';
+      b.onclick=()=>{pick=k;drawLegends();};box.appendChild(b);}
+  }
   $('legDesc').textContent=LEG[pick].d;
 }
 drawLegends();
@@ -198,7 +204,16 @@ const WP=[
  {n:'R-99 サブマシンガン',mag:32,rt:1.4,ft:.06,bd:13,hd:26,sp:.03,ar:.6,kick:.025,auto:1,zf:55,cfg:{rl:.28,hl:.1,bl:.14,mh:.2,mw:.034,sl:.1,sc:0}},
  {n:'ロングボウ スナイパー',mag:5,rt:2.4,ft:1,bd:100,hd:200,sp:.05,ar:.97,kick:.12,auto:0,zf:18,cfg:{rl:.3,hl:.3,bl:.5,mh:.06,mw:.04,sl:.26,sc:1}}
 ];
-function drawWeapons(){const b=$('weapons');b.replaceChildren();WP.forEach((w,i)=>{const x=document.createElement('button');x.textContent=w.n;x.className=i===pickW?'sel':'alt';x.onclick=()=>{pickW=i;drawWeapons();};b.appendChild(x);});}
+function drawWeapons(){
+  for(const id of ['weapons','vsW']){
+    const b=$(id);b.replaceChildren();
+    WP.forEach((w,i)=>{const x=document.createElement('button');x.textContent=w.n;x.className=i===pickW?'sel':'alt';x.onclick=()=>{pickW=i;drawWeapons();};b.appendChild(x);});
+  }
+}
+function drawPauseW(){   // 一時停止中の武器選択
+  const b=$('pauseW');b.replaceChildren();
+  WP.forEach((w,i)=>{const x=document.createElement('button');x.textContent=w.n;x.className=(P.w===i&&!P.un)?'sel':'alt';x.onclick=()=>{P.un=false;P.eq=1;setWeapon(i);drawPauseW();};b.appendChild(x);});
+}
 function drawOpts(){
   const b=$('opts');b.replaceChildren();
   const mk=(t,on,fn)=>{const x=document.createElement('button');x.textContent=t;x.className=on?'sel':'alt';x.onclick=fn;b.appendChild(x);};
@@ -265,7 +280,6 @@ function audioListen(){
   else{L.setPosition(c.x,c.y,c.z);L.setOrientation(fx,fy,fz,0,1,0);}
 }
 /* ---- 人型のモーション(銃を構える腕・曲がる傾き・よじ登り) ---- */
-const gloveD=MT(0x23272d);
 function kin(e,vx,vz){const th=e.g.rotation.y,sn=Math.sin(th),cs=Math.cos(th);return [vx*sn+vz*cs,vx*cs-vz*sn];}
 function pose(e,dt,sl,cl,fwd,lat,rec){
   const t=performance.now();
@@ -387,7 +401,7 @@ function padPoll(dt){
   padOn=padSeen;
   if(padBind){const i=cur.findIndex((x,k)=>x&&!prev[k]);if(i>=0){const a=padBind;for(const o in PB)if(PB[o]===i)PB[o]=PB[a];PB[a]=i;saveP();padBind=null;drawPad();}P.gx=P.gy=0;return;}
   const hit=a=>cur[PB[a]]&&!prev[PB[a]];
-  if(hit('pause')&&G.running&&!G.over){G.paused=!G.paused;show('pause',G.paused);if(G.paused)document.exitPointerLock();}
+  if(hit('pause')&&G.running&&!G.over){G.paused=!G.paused;show('pause',G.paused);if(G.paused)drawPauseW();if(G.paused)document.exitPointerLock();}
   const play=G.running&&!G.paused&&!G.over&&!P.dead;
   P.gx=play?lx:0;P.gy=play?ly:0;
   if(!play)return;
@@ -665,7 +679,7 @@ const SKIN={
   helm:(x,w,h)=>{VG(x,w,h,'#f6f9fd','#cfdbea');GN(x,w,h,300);LN(x,'#4ad0ff',3,[[0,70],[128,70]],1);}
  },[[B(.4,.5,.16),MT(0xe6eef8),0,1.2,-.23,0],[B(.3,.07,.05),MT(0x4ad0ff),0,1.72,.16,1]])
 };
-const DEFSK={vest:mVest,pants:mPants,sleeve:mSleeve,skin:mSkin,hair:mHair,face:mFace,helm:mHelm,acc:[]},gunM=MT(0x15171b);
+const DEFSK={vest:mVest,pants:mPants,sleeve:mSleeve,skin:mSkin,hair:mHair,face:mFace,helm:mHelm,acc:[]},gunM=MT(0x15171b),gloveD=MT(0x23272d);
 function setSkin(k){const K=SKIN[k];if(!K)return;glove.map=K.gloveMap;sleeve.map=K.sleeveMap;glove.color.set(0xffffff);sleeve.color.set(0xffffff);glove.needsUpdate=sleeve.needsUpdate=true;}   // 自分の手の見た目
 function spawnEnemy(boss,skin){
   const K=skin||DEFSK;
@@ -727,7 +741,7 @@ document.addEventListener('pointerlockchange',()=>{
   locked=document.pointerLockElement===ren.domElement;
   if(locked)show('settings',0);
   if(!locked){fire=false;adsHeld=false;clearKeys();}
-  if(G.running&&!G.over){G.paused=!locked;show('pause',!locked);}
+  if(G.running&&!G.over){G.paused=!locked;show('pause',!locked);if(!locked)drawPauseW();}
 });
 addEventListener('mousemove',e=>{
   if(!locked)return;

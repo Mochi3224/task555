@@ -217,7 +217,7 @@ const WP=[
  {n:'R-99 サブマシンガン',mag:32,rt:1.4,ft:.06,bd:13,hd:26,sp:.03,ar:.6,kick:.025,auto:1,zf:55,cfg:{rl:.28,hl:.1,bl:.14,mh:.2,mw:.034,sl:.1,sc:0,ir:'smg'}},
  {n:'ロングボウ スナイパー',mag:5,rt:2.4,ft:1,bd:100,hd:200,sp:.05,ar:.97,kick:.12,auto:0,zf:18,cfg:{rl:.3,hl:.3,bl:.5,mh:.06,mw:.04,sl:.26,sc:1}},
  // ハボック: 基本ダメージ20(頭x1.3/脚x0.75)・11.2発/秒・チャージ0.42秒(解除0.1秒待って0.5秒で減少)・ADS移動x0.5・展開0.6秒(初回1.5秒)
- {n:'ハボック(エネルギーAR)',mag:24,rt:2.4,ft:1/11.2,bd:20,hd:26,lg:.75,sp:.018,ar:.75,kick:.05,auto:1,zf:45,as:.5,dep:.6,first:1.5,chg:.42,chgDelay:.1,chgDecay:.5,
+ {n:'ハボック(エネルギーAR)',mag:24,rt:2.4,ft:1/11.2,bd:20,hd:26,lg:.75,sp:.09,ar:.95,bloom:.05,kick:.05,auto:1,zf:45,as:.5,dep:.6,first:1.5,chg:.42,chgDelay:.1,chgDecay:.5,
   rec:n=>{const j=.85+Math.random()*.3;return n<9?[.0105*j,-.0012*j]:n<15?[.0004,-.0065*j]:[.006*j,-.0014*j];},   // 縦反動が強く、10〜15発目は縦が消えて右へ大きくそれる
   cfg:{hav:1}}
 ];
@@ -280,10 +280,10 @@ let OAM=null;
 const OPT={iron:{n:'アイアンサイト',z:1.15},dot:{n:'ドットサイト(1倍)',z:1.3},x2:{n:'2倍スコープ',z:2},x3:{n:'3倍スコープ',z:3}};
 const RET={
  iron:'',
- dot:'<svg viewBox="-50 -50 100 100"><path d="M0,-4.2V-1.5M0,1.5V4.2M-4.2,0H-1.5M1.5,0H4.2" stroke="#000" stroke-width="1.5" stroke-linecap="round" opacity=".5"/><g class="rt" stroke="#ff2a1a" stroke-width=".6" stroke-linecap="round"><path d="M0,-4.2V-1.5M0,1.5V4.2M-4.2,0H-1.5M1.5,0H4.2"/></g><circle r=".6" fill="#ff2a1a"/></svg>',
- hav:'<svg viewBox="-50 -50 100 100"><g class="rt" stroke="#ff2a1a" fill="none" stroke-width=".4"><circle r="3.2"/><path d="M0,-1.4V1.4M-1.4,0H1.4"/></g></svg>',
- x2:'<svg viewBox="-50 -50 100 100"><g class="rt" stroke="#ff2a1a" stroke-width=".55" fill="none"><path d="M-7,5L0,-1.5L7,5"/><path d="M-30,0H-9M9,0H30"/><path d="M0,9V30"/><path d="M-2.2,14H2.2M-3.2,20H3.2M-4.2,26H4.2"/></g><circle r=".8" fill="#ff3b30"/></svg>',
- x3:'<svg viewBox="-50 -50 100 100"><g class="rt" stroke="#ff2a1a" stroke-width=".5" fill="none"><circle r="2.4"/><path d="M0,-30V-5M0,5V30M-30,0H-5M5,0H30"/><path d="M-1.6,-12H1.6M-1.6,-20H1.6M-1.6,12H1.6M-1.6,20H1.6M-12,-1.6V1.6M-20,-1.6V1.6M12,-1.6V1.6M20,-1.6V1.6"/></g><circle r=".6" fill="#ff3b30"/></svg>',
+ dot:'<svg viewBox="-50 -50 100 100"><path d="M0,-3V-1M0,1V3M-3,0H-1M1,0H3" stroke="#000" stroke-width="1.4" stroke-linecap="round" opacity=".55"/><g class="rt" stroke="#ff2a1a" stroke-width=".5" stroke-linecap="round" fill="none"><path d="M0,-3V-1M0,1V3M-3,0H-1M1,0H3"/></g><circle r=".45" fill="#ff2a1a"/></svg>',
+ hav:'<svg viewBox="-50 -50 100 100"><g class="rt" stroke="#ff2a1a" fill="none" stroke-width=".35"><circle r="2.4"/><path d="M0,-1.1V1.1M-1.1,0H1.1"/></g></svg>',
+ x2:'<svg viewBox="-50 -50 100 100"><path d="M0,-3.6V-1M0,1V3.6M-3.6,0H-1M1,0H3.6M-1.2,5.2H1.2M-1.8,7.4H1.8" stroke="#000" stroke-width="1.4" stroke-linecap="round" opacity=".55"/><g class="rt" stroke="#ff2a1a" stroke-width=".5" stroke-linecap="round" fill="none"><path d="M0,-3.6V-1M0,1V3.6M-3.6,0H-1M1,0H3.6M-1.2,5.2H1.2M-1.8,7.4H1.8"/></g><circle r=".45" fill="#ff2a1a"/></svg>',
+ x3:'<svg viewBox="-50 -50 100 100"><path d="M0,-3.2V-1M0,1V3.2M-3.2,0H-1M1,0H3.2M-1.2,5H1.2M-1.8,7.2H1.8M-5,-.9V.9M5,-.9V.9" stroke="#000" stroke-width="1.4" stroke-linecap="round" opacity=".55"/><g class="rt" stroke="#ff2a1a" stroke-width=".5" stroke-linecap="round" fill="none"><path d="M0,-3.2V-1M0,1V3.2M-3.2,0H-1M1,0H3.2M-1.2,5H1.2M-1.8,7.2H1.8M-5,-.9V.9M5,-.9V.9"/></g><circle r=".45" fill="#ff2a1a"/></svg>',
  snp:'<svg viewBox="-50 -50 100 100"><g stroke="#0a0a0a" fill="none"><path stroke-width=".25" d="M0,-44V-3M0,3V44M-44,0H-3M3,0H44"/><path stroke-width="1" d="M0,-44V-20M0,20V44M-44,0H-20M20,0H44"/></g><g fill="#0a0a0a"><circle cx="-8" r=".5"/><circle cx="8" r=".5"/><circle cx="-14" r=".5"/><circle cx="14" r=".5"/><circle cy="8" r=".5"/><circle cy="14" r=".5"/><circle cy="20" r=".5"/></g><circle r=".5" fill="#ff3b30"/></svg>'
 };
 function applyOptic(){
@@ -999,7 +999,7 @@ const dir=new THREE.Vector3(),org=new THREE.Vector3();
 function shoot(){
   const W=WP[P.w];P.ammo--;P.fireT=W.ft;P.kick=W.kick;{const nw=performance.now();if(nw-P.lastShot>350)P.sn=0;P.lastShot=nw;if(W.rec){const r=W.rec(P.sn);P.pitch+=r[0];P.yaw+=r[1];}else P.pitch+=W.kick*.15;P.sn++;}flash.visible=true;P.flashT=.04;if(!W.auto)fire=false;
   cam.getWorldDirection(dir);
-  const sg=W.sp*(1-W.ar*P.adsT);dir.x+=(Math.random()-.5)*sg;dir.y+=(Math.random()-.5)*sg;dir.z+=(Math.random()-.5)*sg;dir.normalize();
+  const sg=W.sp*(1-W.ar*P.adsT)*(W.bloom?1+Math.min(1,P.sn*W.bloom)*(1-P.adsT):1);   // 腰だめ連射ほどさらにばらけるdir.x+=(Math.random()-.5)*sg;dir.y+=(Math.random()-.5)*sg;dir.z+=(Math.random()-.5)*sg;dir.normalize();
   cam.getWorldPosition(org);rc.set(org,dir);rc.far=150;
   const hits=rc.intersectObjects(boxMeshes.concat(...enemies.map(e=>e.meshes),(D.opp&&G.mode==='duel')?D.opp.e.meshes:[]),false);
   const from=gun.localToWorld(new THREE.Vector3(0,.02,muz));

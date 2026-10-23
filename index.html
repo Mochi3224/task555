@@ -87,7 +87,7 @@ button.sel{background:var(--ice);color:var(--bg)}
   <p>スコープ(アサルト・SMG用)</p><div class="row" id="menuO"></div>
   <div class="row"><button id="btnStart">出撃</button><button id="btnVs">対戦・協力</button><button id="btnSetMenu" class="alt">設定</button><button id="btnOut" class="alt">ログアウト</button></div>
   <div class="card"><b>ランキング(最多キル)</b><ol id="board"></ol></div>
-  <p>WASD 移動(Wで徐々に加速) / Shift しゃがみ・スライディング(滑り中もジャンプ可) / Space ジャンプ・空中でマウスを回しながらA/Dでストレイフ / 壁の前でW+Spaceで壁登り→登り中にSpaceでブースト / 空中で壁に触れてSpaceを押し直すと壁ジャンプ / 左クリック 射撃 / 右クリック スコープ / 1:アサルト 2:SMG 4:スナイパー / 3:素手(1.3倍速・左クリックで殴る=4回で倒せる)⇔武器を出す / ホイール前:少し前進(連続で加速)・ホイール後ろ:ジャンプ / R リロード / Q アビリティ / ESC 一時停止(再開・設定・タイトル)</p>
+  <p>WASD 移動(Wで徐々に加速) / Shift しゃがみ・スライディング(滑り中もジャンプ可) / Space ジャンプ・空中でマウスを回しながらA/Dでストレイフ / 壁の前でW+Spaceで壁登り→登り中にSpaceでブースト / 空中で壁に触れてSpaceを押し直すと壁ジャンプ / 左クリック 射撃 / 右クリック スコープ / 1:アサルト 2:SMG 4:スナイパー 5:ハボック / 3:素手(1.3倍速・左クリックで殴る=4回で倒せる)⇔武器を出す / ホイール前:少し前進(連続で加速)・ホイール後ろ:ジャンプ / R リロード / Q アビリティ / ESC 一時停止(再開・設定・タイトル)</p>
 </div>
 
 <div id="vs" class="ov hide">
@@ -215,7 +215,11 @@ drawLegends();
 const WP=[
  {n:'R-301 アサルト',mag:30,rt:1.6,ft:.09,bd:20,hd:40,sp:.02,ar:.7,kick:.04,auto:1,zf:45,cfg:{rl:.34,hl:.2,bl:.3,mh:.14,mw:.04,sl:.2,sc:0,ir:'ar'}},
  {n:'R-99 サブマシンガン',mag:32,rt:1.4,ft:.06,bd:13,hd:26,sp:.03,ar:.6,kick:.025,auto:1,zf:55,cfg:{rl:.28,hl:.1,bl:.14,mh:.2,mw:.034,sl:.1,sc:0,ir:'smg'}},
- {n:'ロングボウ スナイパー',mag:5,rt:2.4,ft:1,bd:100,hd:200,sp:.05,ar:.97,kick:.12,auto:0,zf:18,cfg:{rl:.3,hl:.3,bl:.5,mh:.06,mw:.04,sl:.26,sc:1}}
+ {n:'ロングボウ スナイパー',mag:5,rt:2.4,ft:1,bd:100,hd:200,sp:.05,ar:.97,kick:.12,auto:0,zf:18,cfg:{rl:.3,hl:.3,bl:.5,mh:.06,mw:.04,sl:.26,sc:1}},
+ // ハボック: 基本ダメージ20(頭x1.3/脚x0.75)・11.2発/秒・チャージ0.42秒(解除0.1秒待って0.5秒で減少)・ADS移動x0.5・展開0.6秒(初回1.5秒)
+ {n:'ハボック(エネルギーAR)',mag:24,rt:2.4,ft:1/11.2,bd:20,hd:26,lg:.75,sp:.018,ar:.75,kick:.05,auto:1,zf:45,as:.5,dep:.6,first:1.5,chg:.42,chgDelay:.1,chgDecay:.5,
+  rec:n=>{const j=.85+Math.random()*.3;return n<9?[.0105*j,-.0012*j]:n<15?[.0004,-.0065*j]:[.006*j,-.0014*j];},   // 縦反動が強く、10〜15発目は縦が消えて右へ大きくそれる
+  cfg:{hav:1}}
 ];
 function drawWeapons(){
   for(const id of ['weapons','vsW']){
@@ -248,8 +252,8 @@ function drawSliders(){
 }
 $('btnSetLogin').onclick=$('btnSetMenu').onclick=$('btnPSet').onclick=()=>show('settings',1);
 $('btnSetClose').onclick=()=>show('settings',0);
-const KD={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',jump:'Space',slide:'ShiftLeft',reload:'KeyR',abil:'KeyQ',w1:'Digit1',w2:'Digit2',un:'Digit3',w4:'Digit4',melee:'KeyV'};
-const KN={fwd:'前進',back:'後退',left:'左',right:'右',jump:'ジャンプ',slide:'スライディング・しゃがみ',reload:'リロード',abil:'アビリティ',w1:'武器1(アサルト)',w2:'武器2(SMG)',un:'素手 ⇔ 武器',w4:'武器4(スナイパー)',melee:'近接(殴る)'};
+const KD={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',jump:'Space',slide:'ShiftLeft',reload:'KeyR',abil:'KeyQ',w1:'Digit1',w2:'Digit2',un:'Digit3',w4:'Digit4',w5:'Digit5',melee:'KeyV'};
+const KN={fwd:'前進',back:'後退',left:'左',right:'右',jump:'ジャンプ',slide:'スライディング・しゃがみ',reload:'リロード',abil:'アビリティ',w1:'武器1(アサルト)',w2:'武器2(SMG)',un:'素手 ⇔ 武器',w4:'武器4(スナイパー)',w5:'武器5(ハボック)',melee:'近接(殴る)'};
 const KB=Object.assign({},KD);
 try{Object.assign(KB,JSON.parse(localStorage.getItem('apexKeys')||'{}'));}catch(e){}
 const saveK=()=>{try{localStorage.setItem('apexKeys',JSON.stringify(KB));}catch(e){}};
@@ -276,17 +280,18 @@ let OAM=null;
 const OPT={iron:{n:'アイアンサイト',z:1.15},dot:{n:'ドットサイト(1倍)',z:1.3},x2:{n:'2倍スコープ',z:2},x3:{n:'3倍スコープ',z:3}};
 const RET={
  iron:'',
- dot:'<svg viewBox="-50 -50 100 100"><path d="M0,-6.6V-1.8M0,1.8V6.6M-6.6,0H-1.8M1.8,0H6.6" stroke="#000" stroke-width="2.3" stroke-linecap="round" opacity=".55"/><g class="rt" stroke="#ff2a1a" stroke-width="1.15" stroke-linecap="round"><path d="M0,-6.6V-1.8M0,1.8V6.6M-6.6,0H-1.8M1.8,0H6.6"/></g><circle r="1" fill="#ff2a1a"/></svg>',
- x2:'<svg viewBox="-50 -50 100 100"><g class="rt" stroke="#ff2a1a" stroke-width="1" fill="none"><path d="M-7,5L0,-1.5L7,5"/><path d="M-30,0H-9M9,0H30"/><path d="M0,9V30"/><path d="M-2.2,14H2.2M-3.2,20H3.2M-4.2,26H4.2"/></g><circle r=".8" fill="#ff3b30"/></svg>',
- x3:'<svg viewBox="-50 -50 100 100"><g class="rt" stroke="#ff2a1a" stroke-width=".9" fill="none"><circle r="2.4"/><path d="M0,-30V-5M0,5V30M-30,0H-5M5,0H30"/><path d="M-1.6,-12H1.6M-1.6,-20H1.6M-1.6,12H1.6M-1.6,20H1.6M-12,-1.6V1.6M-20,-1.6V1.6M12,-1.6V1.6M20,-1.6V1.6"/></g><circle r=".6" fill="#ff3b30"/></svg>',
- snp:'<svg viewBox="-50 -50 100 100"><g stroke="#0a0a0a" fill="none"><path stroke-width=".25" d="M0,-44V-3M0,3V44M-44,0H-3M3,0H44"/><path stroke-width="1.6" d="M0,-44V-20M0,20V44M-44,0H-20M20,0H44"/></g><g fill="#0a0a0a"><circle cx="-8" r=".5"/><circle cx="8" r=".5"/><circle cx="-14" r=".5"/><circle cx="14" r=".5"/><circle cy="8" r=".5"/><circle cy="14" r=".5"/><circle cy="20" r=".5"/></g><circle r=".5" fill="#ff3b30"/></svg>'
+ dot:'<svg viewBox="-50 -50 100 100"><path d="M0,-4.2V-1.5M0,1.5V4.2M-4.2,0H-1.5M1.5,0H4.2" stroke="#000" stroke-width="1.5" stroke-linecap="round" opacity=".5"/><g class="rt" stroke="#ff2a1a" stroke-width=".6" stroke-linecap="round"><path d="M0,-4.2V-1.5M0,1.5V4.2M-4.2,0H-1.5M1.5,0H4.2"/></g><circle r=".6" fill="#ff2a1a"/></svg>',
+ hav:'<svg viewBox="-50 -50 100 100"><g class="rt" stroke="#ff2a1a" fill="none" stroke-width=".4"><circle r="3.2"/><path d="M0,-1.4V1.4M-1.4,0H1.4"/></g></svg>',
+ x2:'<svg viewBox="-50 -50 100 100"><g class="rt" stroke="#ff2a1a" stroke-width=".55" fill="none"><path d="M-7,5L0,-1.5L7,5"/><path d="M-30,0H-9M9,0H30"/><path d="M0,9V30"/><path d="M-2.2,14H2.2M-3.2,20H3.2M-4.2,26H4.2"/></g><circle r=".8" fill="#ff3b30"/></svg>',
+ x3:'<svg viewBox="-50 -50 100 100"><g class="rt" stroke="#ff2a1a" stroke-width=".5" fill="none"><circle r="2.4"/><path d="M0,-30V-5M0,5V30M-30,0H-5M5,0H30"/><path d="M-1.6,-12H1.6M-1.6,-20H1.6M-1.6,12H1.6M-1.6,20H1.6M-12,-1.6V1.6M-20,-1.6V1.6M12,-1.6V1.6M20,-1.6V1.6"/></g><circle r=".6" fill="#ff3b30"/></svg>',
+ snp:'<svg viewBox="-50 -50 100 100"><g stroke="#0a0a0a" fill="none"><path stroke-width=".25" d="M0,-44V-3M0,3V44M-44,0H-3M3,0H44"/><path stroke-width="1" d="M0,-44V-20M0,20V44M-44,0H-20M20,0H44"/></g><g fill="#0a0a0a"><circle cx="-8" r=".5"/><circle cx="8" r=".5"/><circle cx="-14" r=".5"/><circle cx="14" r=".5"/><circle cy="8" r=".5"/><circle cy="14" r=".5"/><circle cy="20" r=".5"/></g><circle r=".5" fill="#ff3b30"/></svg>'
 };
 function applyOptic(){
   const sn=P.w===2;
   guns.forEach(o=>{if(o.og)for(const k in o.og)o.og[k].visible=(k===S.optic);});
   $('scope').className=sn?'snp':'';
   $('sfr').className='hide';
-  $('ret').innerHTML=sn?RET.snp:RET[S.optic];
+  $('ret').innerHTML=sn?RET.snp:(P.w===3&&S.optic==='iron'?RET.hav:RET[S.optic]);
 }
 function drawOptics(){
   for(const id of ['optBox','pauseO','menuO']){
@@ -422,8 +427,8 @@ function initCoop(){
   if(!guest)nextWave();
 }
 /* ---- コントローラ(Apex標準に近い初期配置・変更可) ---- */
-const PD={jump:0,slide:1,reload:2,swap:3,abil:4,un:5,melee:11,ads:6,fire:7,w1:14,w2:12,w4:15,pause:9};
-const PN={jump:'ジャンプ',slide:'しゃがみ・スライディング',reload:'リロード',swap:'武器切替(順送り)',abil:'アビリティ',un:'素手 ⇔ 武器',melee:'近接(殴る)',ads:'スコープ(構え)',fire:'射撃',w1:'武器1',w2:'武器2',w4:'武器4',pause:'一時停止'};
+const PD={jump:0,slide:1,reload:2,swap:3,abil:4,un:5,melee:11,ads:6,fire:7,w1:14,w2:12,w4:15,w5:13,pause:9};
+const PN={jump:'ジャンプ',slide:'しゃがみ・スライディング',reload:'リロード',swap:'武器切替(順送り)',abil:'アビリティ',un:'素手 ⇔ 武器',melee:'近接(殴る)',ads:'スコープ(構え)',fire:'射撃',w1:'武器1',w2:'武器2',w4:'武器4',w5:'武器5(ハボック)',pause:'一時停止'};
 const BL=['A(×)','B(○)','X(□)','Y(△)','LB(L1)','RB(R1)','LT(L2)','RT(R2)','Back','Start','L3','R3','十字↑','十字↓','十字←','十字→'];
 const PB=Object.assign({},PD);
 try{Object.assign(PB,JSON.parse(localStorage.getItem('apexPad')||'{}'));}catch(e){}
@@ -495,8 +500,8 @@ function padPoll(dt){
   if(hit('abil'))ability();
   if(hit('melee')&&P.climbT<=0&&P.fireT<=0&&G.cd<=0)punch();
   if(hit('un')&&P.climbT<=0){P.un=!P.un;P.reload=0;P.fireT=.3;if(!P.un)P.eq=1;}
-  if(hit('swap')&&P.climbT<=0){P.un=false;P.eq=1;setWeapon((P.w+1)%3);}
-  for(const [a,n] of [['w1',0],['w2',1],['w4',2]])if(hit(a)&&P.climbT<=0){P.un=false;P.eq=1;setWeapon(n);}
+  if(hit('swap')&&P.climbT<=0){P.un=false;P.eq=1;setWeapon((P.w+1)%WP.length);}
+  for(const [a,n] of [['w1',0],['w2',1],['w4',2],['w5',3]])if(hit(a)&&P.climbT<=0){P.un=false;P.eq=1;setWeapon(n);}
 }
 drawWeapons();drawOpts();drawSliders();drawKeys();drawPad();drawOptics();
 
@@ -645,7 +650,7 @@ const MP=(c,sh,sp)=>new THREE.MeshPhongMaterial({color:c,shininess:sh||50,specul
 const mMetal=MP(0x26292e,70),mBlack=MP(0x0f1012,60),mSteel=MP(0x6a6e75,90,0x888888),mBrass=MP(0xb87a2c,80,0x886633);
 const glassHolo=new THREE.MeshPhongMaterial({color:0x7fe0ff,transparent:true,opacity:.1,shininess:120,specular:0xffffff,side:THREE.DoubleSide});
 const glassScope=new THREE.MeshPhongMaterial({color:0x4aa6ff,transparent:true,opacity:.14,shininess:120,specular:0xffffff,side:THREE.DoubleSide});
-const emitM=new THREE.MeshBasicMaterial({color:0xff4030});
+const emitM=new THREE.MeshBasicMaterial({color:0xff4030}),mGreen=MP(0x3a4a2a,40);
 function optics(g,zf,ir){   // 照準の中心高さは .0945 にそろえてある。構えると少し大きくなって見やすくなる
   const o={};
   const mk=(k,zp,s)=>{const q=new THREE.Group();q.position.set(0,.0945,zp);q.userData.s=s;g.add(q);o[k]=q;return q;};
@@ -655,8 +660,12 @@ function optics(g,zf,ir){   // 照準の中心高さは .0945 にそろえてあ
   const cylY=(r,l)=>new THREE.CylinderGeometry(r,r,l,14);
   const pane=(q,w,h,z,m)=>add(q,new THREE.PlaneGeometry(w,h),m,0,.0945,z);
   /* アイアンサイト */
-  const I=mk('iron',ir==='smg'?.12:.14,ir==='smg'?1.1:1.05);
-  if(ir==='smg'){   // SMG: 丸い穴の照門と、リング付きの照星
+  const I=mk('iron',ir==='smg'?.12:ir==='hav'?-.02:.14,ir==='smg'?1.1:ir==='hav'?1.3:1.05);
+  if(ir==='hav'){   // ハボック: 緑色のU字照門と▲▼ボタン
+    add(I,B(.04,.04,.04),mMetal,0,.062,-.02);add(I,B(.06,.014,.05),mGreen,0,.081,-.02);
+    add(I,B(.018,.034,.034),mGreen,-.021,.105,-.02);add(I,B(.018,.034,.034),mGreen,.021,.105,-.02);add(I,B(.024,.006,.034),mGreen,0,.091,-.02);
+    add(I,B(.012,.01,.003),mBlack,-.0155,.081,.0065);add(I,B(.012,.01,.003),mBlack,.0155,.081,.0065);
+  }else if(ir==='smg'){   // SMG: 丸い穴の照門と、リング付きの照星
     add(I,B(.05,.012,.05),mMetal,0,.066,.12);add(I,B(.008,.018,.008),mMetal,0,.075,.12);
     add(I,new THREE.TorusGeometry(.0135,.0036,8,18),mBlack,0,.0945,.12);
     add(I,B(.012,.014,.016),mMetal,0,.067,zf);add(I,B(.0034,.0245,.0034),mBlack,0,.0823,zf);
@@ -735,7 +744,37 @@ function buildGun(c){
   const adm=new THREE.Mesh(new THREE.PlaneGeometry(.042,.016),new THREE.MeshBasicMaterial({map:tx}));adm.position.set(0,.0475,adz+.004);adm.rotation.x=-.95;g.add(adm);
   return {g,mag,lh,flash,muz:fz-.03,am,og:(typeof og!=='undefined'?og:null)};
 }
-const guns=WP.map(w=>buildGun(w.cfg));
+const mOrange=new THREE.MeshPhongMaterial({color:0xd98a2b,emissive:0x5a300a,shininess:60}),glowM=new THREE.MeshBasicMaterial({color:0x403010}),cyanM=new THREE.MeshBasicMaterial({color:0x38d0ff});
+function buildHavoc(c){
+  const g=new THREE.Group(),pt=(geo,mat,x,y,z,rx,rz)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.rotation.set(rx||0,0,rz||0);g.add(m);return m;};
+  const cz=(r,l)=>{const gg=new THREE.CylinderGeometry(r,r,l,16);gg.rotateX(Math.PI/2);return gg;};
+  pt(B(.05,.09,.17),mBlack,0,-.002,.33);pt(B(.062,.115,.022),mMetal,0,-.002,.42);        // ストック
+  pt(B(.075,.1,.2),mMetal,0,0,.17);                                                     // レシーバー
+  pt(cz(.032,.16),mBlack,0,.038,.13);                                                   // チャージ室(円筒)
+  for(const z of[.07,.13,.19])pt(cz(.035,.012),mSteel,0,.038,z);                          // リング
+  pt(cz(.02,.03),glowM,0,.038,.045);                                                    // チャージ発光部(チャージで明るくなる)
+  pt(B(.07,.075,.5),mBlack,0,.005,-.25);                                                // 銃身カバー
+  for(const z of[-.15,-.29,-.43]){pt(B(.052,.014,.085),mOrange,0,.0445,z);pt(B(.062,.03,.012),mMetal,0,.03,z+.05);}   // 見えている弾セル
+  pt(B(.012,.012,.5),mSteel,-.036,.02,-.25);pt(B(.012,.012,.5),mSteel,.036,.02,-.25);     // 側面レール
+  pt(cz(.018,.1),mBlack,0,.01,-.55);pt(B(.05,.05,.04),mMetal,0,.01,-.6);                  // 銃口
+  pt(B(.04,.13,.06),mBlack,0,-.105,.2,.35);                                             // ピストルグリップ
+  pt(B(.012,.07,.012),mMetal,0,-.075,.145,.2);pt(B(.012,.012,.06),mMetal,0,-.105,.12);   // トリガーガード
+  pt(B(.036,.11,.04),mBlack,0,-.1,-.2,-.45);pt(B(.03,.02,.14),mMetal,0,-.062,-.14);       // 前の斜めグリップ
+  const mag=pt(B(.052,.1,.075),mMetal,0,-.095,.04);mag.userData.y0=-.095;                // エネルギーセル(リロードで外れる)
+  const ln=new THREE.Mesh(B(.004,.09,.06),cyanM);ln.position.set(.027,0,0);mag.add(ln);
+  pt(B(.05,.05,.08),glove,.012,-.1,.2);pt(B(.055,.055,.3),sleeve,.03,-.15,.36,.35);        // 右手
+  const lh=new THREE.Group();g.add(lh);
+  const lp=(geo,m,x,y,z,rx,ry)=>{const q=new THREE.Mesh(geo,m);q.position.set(x,y,z);q.rotation.set(rx,ry,0);lh.add(q);};
+  lp(B(.055,.05,.1),glove,0,-.14,-.2,0,0);lp(B(.055,.055,.4),sleeve,-.07,-.17,0,-.1,-.35);   // 左手
+  const flash=pt(new THREE.SphereGeometry(.045,8,6),flashMat,0,.01,-.66);flash.visible=false;
+  const cv=document.createElement('canvas');cv.width=128;cv.height=96;const cx2=cv.getContext('2d'),tx=new THREE.CanvasTexture(cv);tx.colorSpace=THREE.SRGBColorSpace;
+  const am={last:-1,draw:n=>{cx2.fillStyle='#0a0c0e';cx2.fillRect(0,0,128,96);cx2.strokeStyle='#d5dde0';cx2.lineWidth=5;cx2.strokeRect(3,3,122,90);cx2.fillStyle='#fff';cx2.font='bold 62px sans-serif';cx2.textAlign='center';cx2.textBaseline='middle';cx2.fillText(String(n),64,50);tx.needsUpdate=true;}};
+  am.draw(0);
+  pt(B(.06,.012,.05),mMetal,0,.052,.235);
+  const adm=new THREE.Mesh(new THREE.PlaneGeometry(.05,.038),new THREE.MeshBasicMaterial({map:tx}));adm.position.set(0,.064,.24);adm.rotation.x=-.95;g.add(adm);   // 弾数ディスプレイ
+  return {g,mag,lh,flash,muz:-.66,am,glow:glowM,og:optics(g,-.2,'hav')};
+}
+const guns=WP.map(w=>w.cfg.hav?buildHavoc(w.cfg):buildGun(w.cfg));
 guns.forEach(o=>{if(o.og)for(const k in o.og)o.og[k].visible=(k===S.optic);});
 guns.forEach((o,i)=>{o.g.visible=i===0;o.g.position.set(.22,-.2,-.5);cam.add(o.g);});
 let gun=guns[0].g,mag=guns[0].mag,lh=guns[0].lh,flash=guns[0].flash,muz=guns[0].muz;
@@ -770,7 +809,7 @@ function collide(p,r,feet){
 /* ---------- ゲーム状態 ---------- */
 const G={running:false,over:false,legend:'wraith'};
 const P={pos:new THREE.Vector3(),vy:0,ground:true,yaw:0,pitch:0,hp:100,sh:50,ammo:30,reload:0,fireT:0,cd:0,dash:0,boost:0,kills:0,wave:0,kick:0,eye:1.7,adsT:0,slide:0,sdx:0,sdz:-1,lx:0,lz:-1,flashT:0,vx:0,vz:0,sj:false,climbT:0,jp:false,ramp:0,dip:0,roll:0,sw:0,w:0,am:[30,32,5],rt:1.6,inv:0,hurtT:0,wj:0,wjT:0,un:false,eq:0};
-Object.assign(P,{push:0,pa:0,punchT:0,gx:0,gy:0,dead:false});
+Object.assign(P,{push:0,pa:0,punchT:0,gx:0,gy:0,dead:false,chg:1,chgR:0,sn:0,lastShot:0});
 let bullets=[],enemies=[],tracers=[],keys={},fire=false,adsHeld=false,locked=false,waveWait=0;
 const rc=new THREE.Raycaster();
 const eMatBody=new THREE.MeshLambertMaterial({color:0xc0392b}),eMatHead=new THREE.MeshLambertMaterial({color:0xf0c8a0}),eMatLeg=new THREE.MeshLambertMaterial({color:0x2c3e50});
@@ -837,12 +876,12 @@ function spawnEnemy(boss,skin){
   add(B(.52,.62,.3),K.vest,0,1.2,0);
   add(B(.3,.3,.3),[K.skin,K.skin,K.hair,K.skin,K.face,K.skin],0,1.68,0,true);
   add(B(.34,.12,.34),K.helm,0,1.87,0,true);
-  e.legs=[-1,1].map(sd=>{const q=new THREE.Group();q.position.set(sd*.13,.82,0);b.add(q);add(B(.2,.82,.22),K.pants,0,-.41,0,false,q);return q;});
+  e.legs=[-1,1].map(sd=>{const q=new THREE.Group();q.position.set(sd*.13,.82,0);b.add(q);add(B(.2,.82,.22),K.pants,0,-.41,0,false,q).userData.leg=true;return q;});
   e.arms=[-1,1].map(sd=>{const q=new THREE.Group();q.position.set(sd*.3,1.45,.02);b.add(q);add(B(.16,.5,.18),K.sleeve,0,-.25,0,false,q);add(B(.14,.13,.14),K.glove||gloveD,0,-.56,0,false,q);return q;});
   add(B(.07,.08,.6),gunM,.12,1.28,.45);
   add(B(.66,.92,.4),hitM,0,1.2,0,false).visible=false;   // 当たり判定(体): 見た目より少し大きい
   add(B(.38,.38,.38),hitM,0,1.69,0,true).visible=false;   // 頭
-  add(B(.34,.86,.3),hitM,0,.45,0,false).visible=false;    // 脚
+  {const m=add(B(.34,.86,.3),hitM,0,.45,0,false);m.visible=false;m.userData.leg=true;}    // 脚
   (K.acc||[]).forEach(([g,m,x,y,z,hd])=>add(g,m,x,y,z,hd));
   const mk=new THREE.Mesh(coneGeo,boss?mkBoss:mkMat);mk.rotation.x=Math.PI;mk.position.y=2.4;g.add(mk);if(boss)g.scale.setScalar(1.7);
   const a=Math.random()*Math.PI*2,r=34+Math.random()*8;
@@ -859,8 +898,8 @@ function banner(t){const b=$('banner');b.textContent=t;b.style.opacity=1;setTime
 
 function setWeapon(n){
   if(n===P.w)return;
-  if(P.w>=0)P.am[P.w]=P.ammo;
-  P.w=n;P.ammo=P.am[n];P.reload=0;P.fireT=.35;
+  const first0=P.w<0;if(P.w>=0)P.am[P.w]=P.ammo;
+  P.w=n;P.ammo=P.am[n];P.reload=0;P.fireT=first0?(WP[n].first||.35):(WP[n].dep||.35);P.chg=WP[n].chg?0:1;P.sn=0;
   const o=guns[n];gun=o.g;mag=o.mag;lh=o.lh;flash=o.flash;muz=o.muz;
   guns.forEach(q=>{q.g.visible=q===o;q.flash.visible=false;});
   applyOptic();
@@ -910,7 +949,7 @@ addEventListener('keydown',e=>{
   if(c==='KeyR')reload();
   if(c==='KeyQ')ability();
   if(c==='KeyV'&&P.climbT<=0&&G.cd<=0&&!P.dead&&P.fireT<=0)punch();
-  const dk={Digit1:0,Digit2:1,Digit4:2}[c];
+  const dk={Digit1:0,Digit2:1,Digit4:2,Digit5:3}[c];
   if(c==='Digit3'&&P.climbT<=0){P.un=!P.un;P.reload=0;P.fireT=.3;if(!P.un)P.eq=1;}   // 素手 ⇔ 武器
   else if(dk!==undefined&&P.climbT<=0){P.un=false;P.eq=1;setWeapon(dk);}
   if(c==='ShiftLeft'&&!e.repeat&&P.ground&&P.slide<=0&&(keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD)){P.slide=1.4;const s0=Math.max(13,Math.hypot(P.vx,P.vz));P.vx=P.lx*s0;P.vz=P.lz*s0;}
@@ -958,7 +997,7 @@ function tracer(a,b,color){
 }
 const dir=new THREE.Vector3(),org=new THREE.Vector3();
 function shoot(){
-  const W=WP[P.w];P.ammo--;P.fireT=W.ft;P.kick=W.kick;P.pitch+=W.kick*.15;flash.visible=true;P.flashT=.04;if(!W.auto)fire=false;
+  const W=WP[P.w];P.ammo--;P.fireT=W.ft;P.kick=W.kick;{const nw=performance.now();if(nw-P.lastShot>350)P.sn=0;P.lastShot=nw;if(W.rec){const r=W.rec(P.sn);P.pitch+=r[0];P.yaw+=r[1];}else P.pitch+=W.kick*.15;P.sn++;}flash.visible=true;P.flashT=.04;if(!W.auto)fire=false;
   cam.getWorldDirection(dir);
   const sg=W.sp*(1-W.ar*P.adsT);dir.x+=(Math.random()-.5)*sg;dir.y+=(Math.random()-.5)*sg;dir.z+=(Math.random()-.5)*sg;dir.normalize();
   cam.getWorldPosition(org);rc.set(org,dir);rc.far=150;
@@ -968,7 +1007,7 @@ function shoot(){
   if(hits.length){
     const h=hits[0];end=h.point;const e=h.object.userData.enemy;
     if(e){
-      if(e.opp)oppHit(h.object.userData.head?W.hd:W.bd);else if(e.remote)remoteHit(e,h.object.userData.head?W.hd:W.bd,1,0);else if(e.boss){e.hits--;if(e.hits<=0)e.hp=0;}else e.hp-=h.object.userData.head?W.hd:W.bd;
+      if(e.opp)oppHit((h.object.userData.head?W.hd:h.object.userData.leg?W.bd*(W.lg||1):W.bd));else if(e.remote)remoteHit(e,(h.object.userData.head?W.hd:h.object.userData.leg?W.bd*(W.lg||1):W.bd),1,0);else if(e.boss){e.hits--;if(e.hits<=0)e.hp=0;}else e.hp-=(h.object.userData.head?W.hd:h.object.userData.leg?W.bd*(W.lg||1):W.bd);
       const c=$('cross');c.classList.add('hit');setTimeout(()=>c.classList.remove('hit'),90);
       if(e.hp<=0){scene.remove(e.g);enemies=enemies.filter(x=>x!==e);P.kills+=e.boss?5:1;}
     }
@@ -995,7 +1034,7 @@ function update(dt){
   let mx=-sy*f+cy*r,mz=-cy*f-sy*r;const l=Math.hypot(mx,mz);if(l>1){mx/=l;mz/=l;}
   if(mx||mz){P.lx=mx;P.lz=mz;}
   const crouch=keys.Shift&&P.slide<=0&&P.ground;
-  const vmax=(crouch?3.5:9)*(P.boost>0?1.4:1)*(adsHeld?.65:1)*(P.un?1.3:1);
+  const vmax=(crouch?3.5:9)*(P.boost>0?1.4:1)*(adsHeld?(WP[P.w].as||.65):1)*(P.un?1.3:1);
   P.ramp=(mx||mz)?Math.min(1,P.ramp+dt*2.2):0;          // Wを押し続けると10%から加速
   P.wjT=Math.max(0,P.wjT-dt);
   if(!P.ground&&P.climbT<=0&&P.jp&&P.wj<2){const n=wallN(P.pos);if(n){P.jp=false;P.wj++;P.wjT=.35;P.vy=8.5;P.vx=n[0]*7-sy*3;P.vz=n[1]*7-cy*3;P.sj=false;}}   // 壁ジャンプ
@@ -1036,7 +1075,10 @@ function update(dt){
   // 射撃
   P.fireT-=dt;P.kick=Math.max(0,P.kick-dt*.4);
   if(P.reload>0){P.reload-=dt;if(P.reload<=0){P.reload=0;P.ammo=WP[P.w].mag;}}
-  if(fire&&!P.dead&&G.cd<=0&&P.fireT<=0&&!P.reload&&!P.un){if(P.ammo>0)shoot();else reload();}
+  {const W0=WP[P.w];   // チャージ: 押している間にたまり、離すと0.1秒後から減っていく
+   if(W0.chg){if(fire&&P.ammo>0&&!P.reload&&!P.un&&G.cd<=0&&!P.dead&&P.climbT<=0){P.chg=Math.min(1,P.chg+dt/W0.chg);P.chgR=0;}else{P.chgR+=dt;if(P.chgR>W0.chgDelay)P.chg=Math.max(0,P.chg-dt/W0.chgDecay);}}
+   else P.chg=1;}
+  if(fire&&!P.dead&&G.cd<=0&&P.fireT<=0&&!P.reload&&!P.un&&P.chg>=1){if(P.ammo>0)shoot();else reload();}
   else if(fire&&!P.dead&&P.un&&G.cd<=0&&P.fireT<=0&&P.climbT<=0)punch();
   // 敵
   const eye=new THREE.Vector3(P.pos.x,P.pos.y+P.eye-.1,P.pos.z);
@@ -1111,6 +1153,7 @@ function update(dt){
   gun.visible=P.climbT<=0&&!P.un&&!(P.w===2&&P.adsT>.6);arms.visible=P.climbT>0||P.un||P.punchT>0;
   {const og=guns[P.w]&&guns[P.w].og;if(og)for(const k in og){const q=og[k],on=k===S.optic;q.visible=on;if(on)q.scale.setScalar(1+(q.userData.s-1)*P.adsT);}}
   {const am=guns[P.w]&&guns[P.w].am;if(am&&am.last!==P.ammo){am.last=P.ammo;am.draw(P.ammo);}}
+  {const gl=guns[P.w]&&guns[P.w].glow;if(gl)gl.color.setRGB(.25+.75*P.chg,.18+.4*P.chg,.06+.1*P.chg);}   // ハボックのチャージ表示
   if(P.climbT>0){const t=1-P.climbT/.55;arms.position.set(0,-.5+.5*t,-.05);}
   else if(P.un||P.punchT>0){const ps=P.punchT>0?Math.sin(Math.PI*(1-P.punchT/.25)):0;arms.position.set((P.pa?1:-1)*.1*ps,-.52+Math.sin(performance.now()/110)*.03*Math.min(1,spd2/9)*(P.ground?1:0)+.05*ps,-.05-.45*ps);}
   if(P.dead&&G.mode==='coop'){const o=D.opp;if(o&&!o.dead){cam.position.set(o.e.g.position.x,o.e.g.position.y+1.7,o.e.g.position.z);cam.rotation.set(0,o.tyaw,0);}gun.visible=false;arms.visible=false;}   // 観戦

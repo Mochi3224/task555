@@ -36,8 +36,8 @@ button.sel{background:var(--ice);color:var(--bg)}
 #user{display:flex;align-items:center;gap:10px}
 #user img{width:40px;height:40px;border-radius:50%}
 #hud{position:fixed;inset:0;pointer-events:none;z-index:5}
-#cross{--c:#fff;position:absolute;left:50%;top:50%;width:28px;height:28px;margin:-14px;
-  background:linear-gradient(var(--c),var(--c)) 0 12px/10px 4px no-repeat,linear-gradient(var(--c),var(--c)) 18px 12px/10px 4px no-repeat,linear-gradient(var(--c),var(--c)) 12px 0/4px 10px no-repeat,linear-gradient(var(--c),var(--c)) 12px 18px/4px 10px no-repeat;
+#cross{--c:#fff;position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px;
+  background:linear-gradient(var(--c),var(--c)) 0 9px/8px 3px no-repeat,linear-gradient(var(--c),var(--c)) 14px 9px/8px 3px no-repeat,linear-gradient(var(--c),var(--c)) 9px 0/3px 8px no-repeat,linear-gradient(var(--c),var(--c)) 9px 14px/3px 8px no-repeat;
   filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 2px #000) drop-shadow(0 0 1px #000)}
 #cross.hit{--c:#ff3b30;transform:scale(1.35)}
 #ret .rt{filter:drop-shadow(0 0 .35vh #ff2a1a)}
@@ -56,13 +56,13 @@ button.sel{background:var(--ice);color:var(--bg)}
 #inv{position:absolute;inset:0;box-shadow:inset 0 0 120px rgba(80,220,255,.8);opacity:0;transition:opacity .2s}
 #boss{position:absolute;top:56px;left:0;right:0;text-align:center;font-size:20px;color:#d9a8ff;letter-spacing:2px}
 #fps{position:absolute;top:16px;right:20px;font-size:20px;color:var(--steel)}
-#scope.snp{background:radial-gradient(circle closest-side at center,transparent 88%,#000 88.6%)}
+#scope.snp{background:radial-gradient(circle closest-side at center,transparent 76%,#000 76.6%)}
 #sfr{position:absolute;pointer-events:none;opacity:0;left:50%;top:50%}
 #sfr.iron{width:0;height:0}
 #sfr.dot{width:0;height:0}
 #sfr.x2{width:112vh;height:62vh;margin:-31vh 0 0 -56vh;border-radius:9vh;box-shadow:0 0 0 200vmax #000,inset 0 0 0 5px #111,inset 0 0 36px rgba(0,0,0,.65)}
 #sfr.x3{width:98vh;height:56vh;margin:-28vh 0 0 -49vh;border-radius:10vh;box-shadow:0 0 0 200vmax #000,inset 0 0 0 5px #111,inset 0 0 36px rgba(0,0,0,.65)}
-#ret{position:absolute;left:50%;top:50%;width:100vh;height:100vh;margin:-50vh 0 0 -50vh;opacity:0;pointer-events:none}
+#ret{position:absolute;left:50%;top:50%;width:100vh;height:100vh;margin:-50vh 0 0 -50vh;opacity:0;pointer-events:none;transform:scale(.7)}
 #ret svg{width:100%;height:100%}
 @media(prefers-reduced-motion:reduce){#banner,#flash,#cross{transition:none}}
 </style>
@@ -643,8 +643,8 @@ const cyl=(r,l)=>{const g=new THREE.CylinderGeometry(r,r,l,10);g.rotateX(Math.PI
 const glassMat=new THREE.MeshBasicMaterial({color:0x66aaff,transparent:true,opacity:.12,side:THREE.DoubleSide}),flashMat=new THREE.MeshBasicMaterial({color:0xffc060});
 const MP=(c,sh,sp)=>new THREE.MeshPhongMaterial({color:c,shininess:sh||50,specular:sp||0x333333});
 const mMetal=MP(0x26292e,70),mBlack=MP(0x0f1012,60),mSteel=MP(0x6a6e75,90,0x888888),mBrass=MP(0xb87a2c,80,0x886633);
-const glassHolo=new THREE.MeshPhongMaterial({color:0x7fe0ff,transparent:true,opacity:.14,shininess:120,specular:0xffffff,side:THREE.DoubleSide});
-const glassScope=new THREE.MeshPhongMaterial({color:0x4aa6ff,transparent:true,opacity:.26,shininess:120,specular:0xffffff,side:THREE.DoubleSide});
+const glassHolo=new THREE.MeshPhongMaterial({color:0x7fe0ff,transparent:true,opacity:.1,shininess:120,specular:0xffffff,side:THREE.DoubleSide});
+const glassScope=new THREE.MeshPhongMaterial({color:0x4aa6ff,transparent:true,opacity:.14,shininess:120,specular:0xffffff,side:THREE.DoubleSide});
 const emitM=new THREE.MeshBasicMaterial({color:0xff4030});
 function optics(g,zf,ir){   // 照準の中心高さは .0945 にそろえてある。構えると少し大きくなって見やすくなる
   const o={};
@@ -655,53 +655,53 @@ function optics(g,zf,ir){   // 照準の中心高さは .0945 にそろえてあ
   const cylY=(r,l)=>new THREE.CylinderGeometry(r,r,l,14);
   const pane=(q,w,h,z,m)=>add(q,new THREE.PlaneGeometry(w,h),m,0,.0945,z);
   /* アイアンサイト */
-  const I=mk('iron',ir==='smg'?.12:.14,ir==='smg'?1.4:1.3);
+  const I=mk('iron',ir==='smg'?.12:.14,ir==='smg'?1.1:1.05);
   if(ir==='smg'){   // SMG: 丸い穴の照門と、リング付きの照星
-    add(I,B(.05,.012,.05),mMetal,0,.066,.12);add(I,B(.009,.018,.009),mMetal,0,.075,.12);
-    add(I,new THREE.TorusGeometry(.0145,.0042,8,18),mBlack,0,.0945,.12);
+    add(I,B(.05,.012,.05),mMetal,0,.066,.12);add(I,B(.008,.018,.008),mMetal,0,.075,.12);
+    add(I,new THREE.TorusGeometry(.0135,.0036,8,18),mBlack,0,.0945,.12);
     add(I,B(.012,.014,.016),mMetal,0,.067,zf);add(I,B(.0034,.0245,.0034),mBlack,0,.0823,zf);
-    add(I,B(.004,.015,.004),mMetal,0,.0765,zf);add(I,new THREE.TorusGeometry(.0105,.0028,8,16),mBlack,0,.0945,zf);
-  }else{            // アサルト: U字の切れ込みがある大きな照門と、ウィング付きの照星
-    add(I,B(.082,.012,.07),mMetal,0,.066,.14);
-    add(I,B(.026,.054,.05),mMetal,-.034,.087,.14);add(I,B(.026,.054,.05),mMetal,.034,.087,.14);
-    add(I,B(.044,.018,.05),mMetal,0,.075,.14);
-    add(I,B(.011,.011,.05),mMetal,-.0165,.0835,.14,0,0,.785);add(I,B(.011,.011,.05),mMetal,.0165,.0835,.14,0,0,.785);
-    add(I,cylX(.011,.012),mBlack,-.0485,.083,.14);add(I,cylX(.011,.012),mBlack,.0485,.083,.14);
-    add(I,cylX(.0125,.004),mSteel,-.0545,.083,.14);add(I,cylX(.0125,.004),mSteel,.0545,.083,.14);
-    add(I,cylY(.017,.003),mSteel,0,.0845,.135);
-    add(I,B(.014,.014,.018),mMetal,0,.067,zf);add(I,B(.0036,.0245,.004),mBlack,0,.0823,zf);
-    add(I,B(.0028,.036,.0045),mBlack,-.0075,.088,zf);add(I,B(.0028,.036,.0045),mBlack,.0075,.088,zf);add(I,B(.02,.004,.006),mBlack,0,.072,zf);
+    add(I,B(.004,.015,.004),mMetal,0,.0765,zf);add(I,new THREE.TorusGeometry(.0105,.0026,8,16),mBlack,0,.0945,zf);
+  }else{            // アサルト: U字の切れ込みがある照門(低め)と、ウィング付きの照星
+    add(I,B(.074,.012,.07),mMetal,0,.066,.14);
+    add(I,B(.022,.046,.05),mMetal,-.032,.083,.14);add(I,B(.022,.046,.05),mMetal,.032,.083,.14);
+    add(I,B(.042,.016,.05),mMetal,0,.074,.14);
+    add(I,B(.01,.01,.05),mMetal,-.0155,.0825,.14,0,0,.785);add(I,B(.01,.01,.05),mMetal,.0155,.0825,.14,0,0,.785);
+    add(I,cylX(.01,.012),mBlack,-.0445,.081,.14);add(I,cylX(.01,.012),mBlack,.0445,.081,.14);
+    add(I,cylX(.0115,.004),mSteel,-.05,.081,.14);add(I,cylX(.0115,.004),mSteel,.05,.081,.14);
+    add(I,cylY(.015,.003),mSteel,0,.083,.135);
+    add(I,B(.014,.014,.018),mMetal,0,.067,zf);add(I,B(.0034,.0245,.004),mBlack,0,.0823,zf);
+    add(I,B(.0026,.034,.0042),mBlack,-.007,.087,zf);add(I,B(.0026,.034,.0042),mBlack,.007,.087,zf);add(I,B(.018,.004,.006),mBlack,0,.072,zf);
   }
-  /* ドットサイト(ホロ): 角ばった枠、ひさし、発光部 */
-  const Dt=mk('dot',.12,1.9);
-  add(Dt,B(.062,.012,.07),mMetal,0,.066,.115);
-  frame(Dt,mBlack,.056,.054,.05,.12,.009);frame(Dt,mMetal,.06,.058,.008,.093,.01);frame(Dt,mMetal,.06,.058,.008,.147,.01);
-  add(Dt,B(.056,.007,.034),mBlack,0,.125,.132);add(Dt,B(.016,.004,.01),emitM,0,.1205,.14);
-  add(Dt,B(.004,.012,.014),mSteel,-.0305,.0945,.115);add(Dt,B(.004,.012,.014),mSteel,.0305,.0945,.115);
+  /* ドットサイト(ホロ) */
+  const Dt=mk('dot',.12,1.35);
+  add(Dt,B(.055,.012,.07),mMetal,0,.066,.115);
+  frame(Dt,mBlack,.05,.048,.05,.12,.006);frame(Dt,mMetal,.054,.052,.008,.093,.007);frame(Dt,mMetal,.054,.052,.008,.147,.007);
+  add(Dt,B(.05,.006,.032),mBlack,0,.122,.132);add(Dt,B(.014,.004,.009),emitM,0,.1175,.14);
+  add(Dt,B(.004,.011,.013),mSteel,-.027,.0945,.115);add(Dt,B(.004,.011,.013),mSteel,.027,.0945,.115);
   pane(Dt,.038,.036,.1,glassHolo);
-  /* 2倍スコープ: 短い箱形、真ちゅう色のリング、上と横のターレット */
-  const X2=mk('x2',.12,1.7);
-  add(X2,B(.064,.014,.09),mMetal,0,.067,.11);
-  frame(X2,mBlack,.056,.056,.09,.12,.008);frame(X2,mMetal,.066,.066,.014,.077,.01);frame(X2,mMetal,.062,.062,.012,.165,.01);frame(X2,mBrass,.07,.07,.004,.069,.004);
-  add(X2,cylY(.009,.014),mMetal,0,.1295,.11);add(X2,cylX(.009,.014),mMetal,.035,.0945,.11);
-  pane(X2,.04,.04,.08,glassScope);pane(X2,.04,.04,.162,glassScope);
-  /* 3倍スコープ: 長く、前が大きく広がる対物フード */
-  const X3=mk('x3',.1,1.6);
-  add(X3,B(.058,.014,.12),mMetal,0,.067,.1);
-  frame(X3,mBlack,.05,.05,.13,.11,.008);frame(X3,mMetal,.078,.078,.03,.045,.008);frame(X3,mMetal,.06,.06,.014,.178,.01);frame(X3,mBrass,.08,.08,.004,.028,.004);
-  add(X3,cylY(.0105,.018),mMetal,0,.1325,.1);add(X3,cylX(.0105,.018),mMetal,.0335,.0945,.1);
-  pane(X3,.046,.046,.032,glassScope);pane(X3,.034,.034,.176,glassScope);
+  /* 2倍スコープ */
+  const X2=mk('x2',.12,1.2);
+  add(X2,B(.056,.014,.09),mMetal,0,.067,.11);
+  frame(X2,mBlack,.05,.05,.09,.12,.006);frame(X2,mMetal,.058,.058,.012,.077,.007);frame(X2,mMetal,.054,.054,.01,.165,.007);frame(X2,mBrass,.06,.06,.004,.069,.003);
+  add(X2,cylY(.008,.012),mMetal,0,.1265,.11);add(X2,cylX(.008,.012),mMetal,.032,.0945,.11);
+  pane(X2,.038,.038,.08,glassScope);pane(X2,.038,.038,.162,glassScope);
+  /* 3倍スコープ */
+  const X3=mk('x3',.1,1.1);
+  add(X3,B(.052,.014,.12),mMetal,0,.067,.1);
+  frame(X3,mBlack,.046,.046,.13,.11,.006);frame(X3,mMetal,.066,.066,.026,.045,.007);frame(X3,mMetal,.052,.052,.012,.178,.007);frame(X3,mBrass,.068,.068,.004,.028,.003);
+  add(X3,cylY(.009,.016),mMetal,0,.1265,.1);add(X3,cylX(.009,.016),mMetal,.032,.0945,.1);
+  pane(X3,.04,.04,.032,glassScope);pane(X3,.034,.034,.176,glassScope);
   return o;
 }
-function sniperScope(g){   // スナイパー用の大きなスコープ(マウントリング・ターレット・レンズ)
+function sniperScope(g){   // スナイパー用スコープ(少し小さめ)
   const add=(geo,mat,x,y,z)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);g.add(m);return m;};
   const cz=(r,l)=>{const gg=new THREE.CylinderGeometry(r,r,l,18);gg.rotateX(Math.PI/2);return gg;};
-  add(B(.04,.012,.14),mMetal,0,.066,.03);
-  add(cz(.024,.3),mBlack,0,.0945,.04);add(cz(.034,.07),mMetal,0,.0945,-.14);add(cz(.029,.05),mMetal,0,.0945,.2);
-  add(cz(.0305,.012),mSteel,0,.0945,.08);add(cz(.0305,.012),mSteel,0,.0945,-.02);add(cz(.036,.006),mBrass,0,.0945,-.172);
-  add(new THREE.CircleGeometry(.031,20),glassScope,0,.0945,-.176);add(new THREE.CircleGeometry(.025,20),glassScope,0,.0945,.226);
-  add(new THREE.CylinderGeometry(.009,.009,.016,12),mMetal,0,.1235,.02);
-  const ts=add(new THREE.CylinderGeometry(.009,.009,.016,12),mMetal,.029,.0945,.02);ts.rotation.z=Math.PI/2;
+  add(B(.036,.012,.12),mMetal,0,.066,.03);
+  add(cz(.02,.26),mBlack,0,.0945,.04);add(cz(.029,.06),mMetal,0,.0945,-.12);add(cz(.024,.044),mMetal,0,.0945,.17);
+  add(cz(.0255,.01),mSteel,0,.0945,.07);add(cz(.0255,.01),mSteel,0,.0945,-.01);add(cz(.03,.006),mBrass,0,.0945,-.15);
+  add(new THREE.CircleGeometry(.026,20),glassScope,0,.0945,-.153);add(new THREE.CircleGeometry(.021,20),glassScope,0,.0945,.193);
+  add(new THREE.CylinderGeometry(.008,.008,.014,12),mMetal,0,.1185,.02);
+  const ts=add(new THREE.CylinderGeometry(.008,.008,.014,12),mMetal,.025,.0945,.02);ts.rotation.z=Math.PI/2;
 }
 function buildGun(c){
   const g=new THREE.Group(),pt=(geo,mat,x,y,z,rx)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.rotation.x=rx||0;g.add(m);return m;};
@@ -827,7 +827,7 @@ const SKIN={
   helm:(x,w,h)=>{VG(x,w,h,'#f6f9fd','#cfdbea');GN(x,w,h,300);LN(x,'#4ad0ff',3,[[0,70],[128,70]],1);}
  },[[B(.4,.5,.16),MT(0xe6eef8),0,1.2,-.23,0],[B(.3,.07,.05),MT(0x4ad0ff),0,1.72,.16,1]])
 };
-const DEFSK={vest:mVest,pants:mPants,sleeve:mSleeve,skin:mSkin,hair:mHair,face:mFace,helm:mHelm,acc:[]},gunM=MT(0x15171b),gloveD=MT(0x23272d);
+const DEFSK={vest:mVest,pants:mPants,sleeve:mSleeve,skin:mSkin,hair:mHair,face:mFace,helm:mHelm,acc:[]},gunM=MT(0x15171b),gloveD=MT(0x23272d),hitM=new THREE.MeshBasicMaterial({visible:false});
 function setSkin(k){const K=SKIN[k];if(!K)return;glove.map=K.gloveMap;sleeve.map=K.sleeveMap;glove.color.set(0xffffff);sleeve.color.set(0xffffff);glove.needsUpdate=sleeve.needsUpdate=true;}   // 自分の手の見た目
 function spawnEnemy(boss,skin){
   const K=skin||DEFSK;
@@ -840,6 +840,9 @@ function spawnEnemy(boss,skin){
   e.legs=[-1,1].map(sd=>{const q=new THREE.Group();q.position.set(sd*.13,.82,0);b.add(q);add(B(.2,.82,.22),K.pants,0,-.41,0,false,q);return q;});
   e.arms=[-1,1].map(sd=>{const q=new THREE.Group();q.position.set(sd*.3,1.45,.02);b.add(q);add(B(.16,.5,.18),K.sleeve,0,-.25,0,false,q);add(B(.14,.13,.14),K.glove||gloveD,0,-.56,0,false,q);return q;});
   add(B(.07,.08,.6),gunM,.12,1.28,.45);
+  add(B(.66,.92,.4),hitM,0,1.2,0,false).visible=false;   // 当たり判定(体): 見た目より少し大きい
+  add(B(.38,.38,.38),hitM,0,1.69,0,true).visible=false;   // 頭
+  add(B(.34,.86,.3),hitM,0,.45,0,false).visible=false;    // 脚
   (K.acc||[]).forEach(([g,m,x,y,z,hd])=>add(g,m,x,y,z,hd));
   const mk=new THREE.Mesh(coneGeo,boss?mkBoss:mkMat);mk.rotation.x=Math.PI;mk.position.y=2.4;g.add(mk);if(boss)g.scale.setScalar(1.7);
   const a=Math.random()*Math.PI*2,r=34+Math.random()*8;

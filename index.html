@@ -62,7 +62,7 @@ button.sel{background:var(--ice);color:var(--bg)}
 #sfr.dot{width:0;height:0}
 #sfr.x2{width:112vh;height:62vh;margin:-31vh 0 0 -56vh;border-radius:9vh;box-shadow:0 0 0 200vmax #000,inset 0 0 0 5px #111,inset 0 0 36px rgba(0,0,0,.65)}
 #sfr.x3{width:98vh;height:56vh;margin:-28vh 0 0 -49vh;border-radius:10vh;box-shadow:0 0 0 200vmax #000,inset 0 0 0 5px #111,inset 0 0 36px rgba(0,0,0,.65)}
-#ret{position:absolute;left:50%;top:50%;width:100vh;height:100vh;margin:-50vh 0 0 -50vh;opacity:0;pointer-events:none;transform:scale(.7)}
+#ret{position:absolute;left:50%;top:50%;width:100vh;height:100vh;margin:-50vh 0 0 -50vh;opacity:0;pointer-events:none;transform:scale(.6)}
 #ret svg{width:100%;height:100%}
 @media(prefers-reduced-motion:reduce){#banner,#flash,#cross{transition:none}}
 </style>
@@ -85,6 +85,7 @@ button.sel{background:var(--ice);color:var(--bg)}
   <p id="legDesc"></p>
   <p>武器を選択</p><div class="row" id="weapons"></div>
   <p>スコープ(アサルト・SMG用)</p><div class="row" id="menuO"></div>
+  <div class="row" id="menuT"></div>
   <div class="row"><button id="btnStart">出撃</button><button id="btnVs">対戦・協力</button><button id="btnSetMenu" class="alt">設定</button><button id="btnOut" class="alt">ログアウト</button></div>
   <div class="card"><b>ランキング(最多キル)</b><ol id="board"></ol></div>
   <p>WASD 移動(Wで徐々に加速) / Shift しゃがみ・スライディング(滑り中もジャンプ可) / Space ジャンプ・空中でマウスを回しながらA/Dでストレイフ / 壁の前でW+Spaceで壁登り→登り中にSpaceでブースト / 空中で壁に触れてSpaceを押し直すと壁ジャンプ / 左クリック 射撃 / 右クリック スコープ / 1:アサルト 2:SMG 4:スナイパー 5:ハボック / 3:素手(1.3倍速・左クリックで殴る=4回で倒せる)⇔武器を出す / ホイール前:少し前進(連続で加速)・ホイール後ろ:ジャンプ / R リロード / Q アビリティ / ESC 一時停止(再開・設定・タイトル)</p>
@@ -106,11 +107,13 @@ button.sel{background:var(--ice);color:var(--bg)}
   <div class="row"><button id="btnResume">再開</button><button id="btnPSet" class="alt">設定</button><button id="btnTitle" class="alt">タイトルへ</button></div>
   <p>武器を選ぶ</p><div class="row" id="pauseW"></div>
   <p>スコープ</p><div class="row" id="pauseO"></div>
+  <div class="row" id="pauseT"></div>
   <p>タイトルへ戻ると、ここまでの戦績が保存されます</p></div>
 <div id="settings" class="ov hide" style="z-index:20">
   <h1>設定</h1>
   <div id="sliders" class="card"></div>
   <p>スコープの種類(アサルト・SMG用)</p><div class="row" id="optBox"></div>
+  <p>アタッチメント</p><div class="row" id="turboBox"></div>
   <details class="card"><summary>キー設定(タップで開閉)</summary><div id="keysBox"></div><button id="keysReset" class="alt">キー設定を初期化</button></details>
   <details class="card"><summary>コントローラ配置(タップで開閉)</summary><div id="padBox"></div><button id="padReset" class="alt">コントローラ配置を初期化(Apex標準)</button></details>
   <p>FPS上限・軽量化</p><div class="row" id="opts"></div>
@@ -199,7 +202,7 @@ const LEG={
   octane:{n:'オクタン',d:'Q: 4秒間 移動速度1.5倍 / パッシブ: 自動回復(CT 10秒)',cd:10}
 };
 let pick='wraith',pickW=0,fpsCap=60,lite=false;
-const S={sens:1,ads:.5,zoom:1,fov:75,gsens:1,vol:.6,optic:'dot',aa:.5};
+const S={sens:1,ads:.5,zoom:1,fov:75,gsens:1,vol:.6,optic:'dot',aa:.5,turbo:false};
 try{Object.assign(S,JSON.parse(localStorage.getItem('apexSet')||'{}'));}catch(e){}
 const saveS=()=>{try{localStorage.setItem('apexSet',JSON.stringify(S));}catch(e){}};
 function drawLegends(){
@@ -217,8 +220,8 @@ const WP=[
  {n:'R-99 サブマシンガン',mag:32,rt:1.4,ft:.06,bd:13,hd:26,sp:.03,ar:.6,kick:.025,auto:1,zf:55,cfg:{rl:.28,hl:.1,bl:.14,mh:.2,mw:.034,sl:.1,sc:0,ir:'smg'}},
  {n:'ロングボウ スナイパー',mag:5,rt:2.4,ft:1,bd:100,hd:200,sp:.05,ar:.97,kick:.12,auto:0,zf:18,cfg:{rl:.3,hl:.3,bl:.5,mh:.06,mw:.04,sl:.26,sc:1}},
  // ハボック: 基本ダメージ20(頭x1.3/脚x0.75)・11.2発/秒・チャージ0.42秒(解除0.1秒待って0.5秒で減少)・ADS移動x0.5・展開0.6秒(初回1.5秒)
- {n:'ハボック(エネルギーAR)',mag:24,rt:2.4,ft:1/11.2,bd:20,hd:26,lg:.75,sp:.09,ar:.95,bloom:.05,kick:.05,auto:1,zf:45,as:.5,dep:.6,first:1.5,chg:.42,chgDelay:.1,chgDecay:.5,
-  rec:n=>{const j=.85+Math.random()*.3;return n<9?[.0105*j,-.0012*j]:n<15?[.0004,-.0065*j]:[.006*j,-.0014*j];},   // 縦反動が強く、10〜15発目は縦が消えて右へ大きくそれる
+ {n:'ハボック(エネルギーAR)',mag:24,rt:2.4,ft:1/11.2,bd:20,hd:26,lg:.75,sp:.09,ar:.95,bloom:.05,kick:.07,auto:1,zf:45,as:.5,dep:.6,first:1.5,chg:.42,chgDelay:.1,chgDecay:.5,
+  rec:n=>{const j=.85+Math.random()*.3;return n<9?[.0165*j,-.0018*j]:n<15?[.0006,-.009*j]:[.0105*j,-.002*j];},   // 縦反動が強く、10〜15発目は縦が消えて右へ大きくそれる
   cfg:{hav:1}}
 ];
 function drawWeapons(){
@@ -280,10 +283,10 @@ let OAM=null;
 const OPT={iron:{n:'アイアンサイト',z:1.15},dot:{n:'ドットサイト(1倍)',z:1.3},x2:{n:'2倍スコープ',z:2},x3:{n:'3倍スコープ',z:3}};
 const RET={
  iron:'',
- dot:'<svg viewBox="-50 -50 100 100"><path d="M0,-3V-1M0,1V3M-3,0H-1M1,0H3" stroke="#000" stroke-width="1.4" stroke-linecap="round" opacity=".55"/><g class="rt" stroke="#ff2a1a" stroke-width=".5" stroke-linecap="round" fill="none"><path d="M0,-3V-1M0,1V3M-3,0H-1M1,0H3"/></g><circle r=".45" fill="#ff2a1a"/></svg>',
- hav:'<svg viewBox="-50 -50 100 100"><g class="rt" stroke="#ff2a1a" fill="none" stroke-width=".35"><circle r="2.4"/><path d="M0,-1.1V1.1M-1.1,0H1.1"/></g></svg>',
- x2:'<svg viewBox="-50 -50 100 100"><path d="M0,-3.6V-1M0,1V3.6M-3.6,0H-1M1,0H3.6M-1.2,5.2H1.2M-1.8,7.4H1.8" stroke="#000" stroke-width="1.4" stroke-linecap="round" opacity=".55"/><g class="rt" stroke="#ff2a1a" stroke-width=".5" stroke-linecap="round" fill="none"><path d="M0,-3.6V-1M0,1V3.6M-3.6,0H-1M1,0H3.6M-1.2,5.2H1.2M-1.8,7.4H1.8"/></g><circle r=".45" fill="#ff2a1a"/></svg>',
- x3:'<svg viewBox="-50 -50 100 100"><path d="M0,-3.2V-1M0,1V3.2M-3.2,0H-1M1,0H3.2M-1.2,5H1.2M-1.8,7.2H1.8M-5,-.9V.9M5,-.9V.9" stroke="#000" stroke-width="1.4" stroke-linecap="round" opacity=".55"/><g class="rt" stroke="#ff2a1a" stroke-width=".5" stroke-linecap="round" fill="none"><path d="M0,-3.2V-1M0,1V3.2M-3.2,0H-1M1,0H3.2M-1.2,5H1.2M-1.8,7.2H1.8M-5,-.9V.9M5,-.9V.9"/></g><circle r=".45" fill="#ff2a1a"/></svg>',
+ dot:'<svg viewBox="-50 -50 100 100"><path d="M0,-2V-.7M0,.7V2M-2,0H-.7M.7,0H2" stroke="#000" stroke-width="1" stroke-linecap="round" opacity=".4"/><g class="rt" stroke="#ff2a1a" stroke-width=".4" stroke-linecap="round" fill="none"><path d="M0,-2V-.7M0,.7V2M-2,0H-.7M.7,0H2"/></g><circle r=".3" fill="#ff2a1a"/></svg>',
+ hav:'<svg viewBox="-50 -50 100 100"><g class="rt" stroke="#ff2a1a" fill="none" stroke-width=".3"><circle r="1.5"/><path d="M0,-.7V.7M-.7,0H.7"/></g></svg>',
+ x2:'<svg viewBox="-50 -50 100 100"><path d="M0,-2.4V-.7M0,.7V2.4M-2.4,0H-.7M.7,0H2.4M-.8,3.6H.8M-1.2,5.2H1.2" stroke="#000" stroke-width="1" stroke-linecap="round" opacity=".4"/><g class="rt" stroke="#ff2a1a" stroke-width=".4" stroke-linecap="round" fill="none"><path d="M0,-2.4V-.7M0,.7V2.4M-2.4,0H-.7M.7,0H2.4M-.8,3.6H.8M-1.2,5.2H1.2"/></g><circle r=".3" fill="#ff2a1a"/></svg>',
+ x3:'<svg viewBox="-50 -50 100 100"><path d="M0,-2.2V-.7M0,.7V2.2M-2.2,0H-.7M.7,0H2.2M-.8,3.4H.8M-1.2,4.8H1.2M-3.4,-.6V.6M3.4,-.6V.6" stroke="#000" stroke-width="1" stroke-linecap="round" opacity=".4"/><g class="rt" stroke="#ff2a1a" stroke-width=".4" stroke-linecap="round" fill="none"><path d="M0,-2.2V-.7M0,.7V2.2M-2.2,0H-.7M.7,0H2.2M-.8,3.4H.8M-1.2,4.8H1.2M-3.4,-.6V.6M3.4,-.6V.6"/></g><circle r=".3" fill="#ff2a1a"/></svg>',
  snp:'<svg viewBox="-50 -50 100 100"><g stroke="#0a0a0a" fill="none"><path stroke-width=".25" d="M0,-44V-3M0,3V44M-44,0H-3M3,0H44"/><path stroke-width="1" d="M0,-44V-20M0,20V44M-44,0H-20M20,0H44"/></g><g fill="#0a0a0a"><circle cx="-8" r=".5"/><circle cx="8" r=".5"/><circle cx="-14" r=".5"/><circle cx="14" r=".5"/><circle cy="8" r=".5"/><circle cy="14" r=".5"/><circle cy="20" r=".5"/></g><circle r=".5" fill="#ff3b30"/></svg>'
 };
 function applyOptic(){
@@ -292,6 +295,13 @@ function applyOptic(){
   $('scope').className=sn?'snp':'';
   $('sfr').className='hide';
   $('ret').innerHTML=sn?RET.snp:(P.w===3&&S.optic==='iron'?RET.hav:RET[S.optic]);
+}
+function drawTurbo(){   // ターボチャージャー: スピンアップ時間を短縮(チャージ0.01秒、減少0秒)
+  for(const id of ['turboBox','pauseT','menuT']){
+    const b=$(id);b.replaceChildren();
+    const x=document.createElement('button');x.textContent=S.turbo?'ターボチャージャー ON(ハボック)':'ターボチャージャー OFF(ハボック)';x.className=S.turbo?'sel':'alt';
+    x.onclick=()=>{S.turbo=!S.turbo;saveS();drawTurbo();};b.appendChild(x);
+  }
 }
 function drawOptics(){
   for(const id of ['optBox','pauseO','menuO']){
@@ -503,7 +513,7 @@ function padPoll(dt){
   if(hit('swap')&&P.climbT<=0){P.un=false;P.eq=1;setWeapon((P.w+1)%WP.length);}
   for(const [a,n] of [['w1',0],['w2',1],['w4',2],['w5',3]])if(hit(a)&&P.climbT<=0){P.un=false;P.eq=1;setWeapon(n);}
 }
-drawWeapons();drawOpts();drawSliders();drawKeys();drawPad();drawOptics();
+drawWeapons();drawOpts();drawSliders();drawKeys();drawPad();drawOptics();drawTurbo();
 
 /* ---------- 対戦モード(1対1) ---------- */
 const D={kind:'cpu',role:'host',code:'',unsubs:[],opp:null,m:0,started:false,ready:false,seen:0,sn:0,shots:0,sendT:0,lastRx:0,oppUid:'',oppName:'',oppLg:'',gm:'duel',lvl:'normal',dmgTo:0,eh:{},ehSeen:{},gb:[],over:0,wSeen:0,myRef:null};
@@ -744,35 +754,46 @@ function buildGun(c){
   const adm=new THREE.Mesh(new THREE.PlaneGeometry(.042,.016),new THREE.MeshBasicMaterial({map:tx}));adm.position.set(0,.0475,adz+.004);adm.rotation.x=-.95;g.add(adm);
   return {g,mag,lh,flash,muz:fz-.03,am,og:(typeof og!=='undefined'?og:null)};
 }
-const mOrange=new THREE.MeshPhongMaterial({color:0xd98a2b,emissive:0x5a300a,shininess:60}),glowM=new THREE.MeshBasicMaterial({color:0x403010}),cyanM=new THREE.MeshBasicMaterial({color:0x38d0ff});
-function buildHavoc(c){
+const glowM=new THREE.MeshBasicMaterial({color:0x2a8fbf}),mBodyG=MP(0x2f3236,55);
+function buildHavoc(c){   // 画像のハボック: 黒灰色の本体・青く光る3つの電池窓・円筒のチャージ室・三角形のハンドガードとグリップ枠
   const g=new THREE.Group(),pt=(geo,mat,x,y,z,rx,rz)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.rotation.set(rx||0,0,rz||0);g.add(m);return m;};
-  const cz=(r,l)=>{const gg=new THREE.CylinderGeometry(r,r,l,16);gg.rotateX(Math.PI/2);return gg;};
-  pt(B(.05,.09,.17),mBlack,0,-.002,.33);pt(B(.062,.115,.022),mMetal,0,-.002,.42);        // ストック
-  pt(B(.075,.1,.2),mMetal,0,0,.17);                                                     // レシーバー
-  pt(cz(.032,.16),mBlack,0,.038,.13);                                                   // チャージ室(円筒)
-  for(const z of[.07,.13,.19])pt(cz(.035,.012),mSteel,0,.038,z);                          // リング
-  pt(cz(.02,.03),glowM,0,.038,.045);                                                    // チャージ発光部(チャージで明るくなる)
-  pt(B(.07,.075,.5),mBlack,0,.005,-.25);                                                // 銃身カバー
-  for(const z of[-.15,-.29,-.43]){pt(B(.052,.014,.085),mOrange,0,.0445,z);pt(B(.062,.03,.012),mMetal,0,.03,z+.05);}   // 見えている弾セル
-  pt(B(.012,.012,.5),mSteel,-.036,.02,-.25);pt(B(.012,.012,.5),mSteel,.036,.02,-.25);     // 側面レール
-  pt(cz(.018,.1),mBlack,0,.01,-.55);pt(B(.05,.05,.04),mMetal,0,.01,-.6);                  // 銃口
-  pt(B(.04,.13,.06),mBlack,0,-.105,.2,.35);                                             // ピストルグリップ
-  pt(B(.012,.07,.012),mMetal,0,-.075,.145,.2);pt(B(.012,.012,.06),mMetal,0,-.105,.12);   // トリガーガード
-  pt(B(.036,.11,.04),mBlack,0,-.1,-.2,-.45);pt(B(.03,.02,.14),mMetal,0,-.062,-.14);       // 前の斜めグリップ
-  const mag=pt(B(.052,.1,.075),mMetal,0,-.095,.04);mag.userData.y0=-.095;                // エネルギーセル(リロードで外れる)
-  const ln=new THREE.Mesh(B(.004,.09,.06),cyanM);ln.position.set(.027,0,0);mag.add(ln);
-  pt(B(.05,.05,.08),glove,.012,-.1,.2);pt(B(.055,.055,.3),sleeve,.03,-.15,.36,.35);        // 右手
+  const cz=(r,l)=>{const gg=new THREE.CylinderGeometry(r,r,l,18);gg.rotateX(Math.PI/2);return gg;};
+  const bar=(z1,y1,z2,y2,t,mat)=>{const dz=z2-z1,dy=y2-y1,m=pt(B(t,t,Math.hypot(dz,dy)),mat,0,(y1+y2)/2,(z1+z2)/2);m.rotation.x=Math.atan2(-dy,dz);return m;};
+  /* 後ろ: 大きな平らなストック */
+  pt(B(.058,.13,.2),mBodyG,0,-.012,.31);pt(B(.062,.14,.02),mMetal,0,-.01,.42);pt(B(.05,.012,.16),mSteel,0,.056,.31);
+  /* 中央: レシーバーと、青いコイルのあるチャージ室 */
+  pt(B(.076,.112,.18),mMetal,0,-.005,.12);
+  pt(cz(.036,.24),mBlack,0,.045,.04);pt(cz(.04,.05),mBlack,0,.045,.17);
+  pt(cz(.039,.014),mSteel,0,.045,.075);pt(cz(.039,.014),mSteel,0,.045,-.01);pt(cz(.038,.022),glowM,0,.045,.03);
+  /* 前: 光る電池セルの窓が3つ並んだ銃身カバー */
+  pt(B(.078,.088,.5),mBodyG,0,.012,-.3);
+  for(const z of[-.17,-.32,-.47]){for(const sx of[-1,1]){pt(B(.006,.052,.122),mBlack,sx*.039,.014,z);pt(B(.004,.04,.108),glowM,sx*.041,.014,z);}pt(B(.04,.01,.1),mSteel,0,.06,z);}
+  pt(B(.03,.012,.5),mMetal,0,.062,-.3);
+  pt(B(.078,.088,.04),mMetal,0,.012,-.575);pt(cz(.015,.07),mBlack,0,.012,-.63);
+  /* 前の三角形ハンドガード(斜めに下がって前へ伸びる) */
+  bar(-.12,-.03,-.2,-.115,.02,mBodyG);bar(-.2,-.115,-.4,-.115,.02,mBodyG);bar(-.4,-.115,-.44,-.03,.02,mBodyG);
+  /* 後ろのピストルグリップと三角形の枠 */
+  pt(B(.04,.14,.055),mBlack,0,-.11,.15,-.3);bar(.12,-.17,.34,-.075,.016,mBodyG);
+  /* エネルギーセル(リロードで外れる) */
+  const mag=pt(B(.05,.09,.07),mMetal,0,-.095,0);mag.userData.y0=-.095;
+  const ln=new THREE.Mesh(B(.004,.08,.05),glowM);ln.position.set(.027,0,0);mag.add(ln);
+  /* ターボチャージャー(付けたときだけ表示) */
+  const tb=new THREE.Group();tb.visible=false;g.add(tb);
+  const t1=new THREE.Mesh(cz(.018,.07),mSteel);t1.position.set(.052,.045,.09);tb.add(t1);
+  const t2=new THREE.Mesh(cz(.021,.01),glowM);t2.position.set(.052,.045,.06);tb.add(t2);
+  /* 手 */
+  pt(B(.05,.05,.08),glove,.012,-.1,.15);pt(B(.055,.055,.3),sleeve,.03,-.15,.31,.35);
   const lh=new THREE.Group();g.add(lh);
   const lp=(geo,m,x,y,z,rx,ry)=>{const q=new THREE.Mesh(geo,m);q.position.set(x,y,z);q.rotation.set(rx,ry,0);lh.add(q);};
-  lp(B(.055,.05,.1),glove,0,-.14,-.2,0,0);lp(B(.055,.055,.4),sleeve,-.07,-.17,0,-.1,-.35);   // 左手
-  const flash=pt(new THREE.SphereGeometry(.045,8,6),flashMat,0,.01,-.66);flash.visible=false;
+  lp(B(.055,.05,.1),glove,0,-.125,-.3,0,0);lp(B(.055,.055,.4),sleeve,-.07,-.155,-.1,-.1,-.35);
+  const flash=pt(new THREE.SphereGeometry(.045,8,6),flashMat,0,.012,-.67);flash.visible=false;
+  /* 弾数ディスプレイ */
   const cv=document.createElement('canvas');cv.width=128;cv.height=96;const cx2=cv.getContext('2d'),tx=new THREE.CanvasTexture(cv);tx.colorSpace=THREE.SRGBColorSpace;
   const am={last:-1,draw:n=>{cx2.fillStyle='#0a0c0e';cx2.fillRect(0,0,128,96);cx2.strokeStyle='#d5dde0';cx2.lineWidth=5;cx2.strokeRect(3,3,122,90);cx2.fillStyle='#fff';cx2.font='bold 62px sans-serif';cx2.textAlign='center';cx2.textBaseline='middle';cx2.fillText(String(n),64,50);tx.needsUpdate=true;}};
   am.draw(0);
   pt(B(.06,.012,.05),mMetal,0,.052,.235);
-  const adm=new THREE.Mesh(new THREE.PlaneGeometry(.05,.038),new THREE.MeshBasicMaterial({map:tx}));adm.position.set(0,.064,.24);adm.rotation.x=-.95;g.add(adm);   // 弾数ディスプレイ
-  return {g,mag,lh,flash,muz:-.66,am,glow:glowM,og:optics(g,-.2,'hav')};
+  const adm=new THREE.Mesh(new THREE.PlaneGeometry(.05,.038),new THREE.MeshBasicMaterial({map:tx}));adm.position.set(0,.064,.24);adm.rotation.x=-.95;g.add(adm);
+  return {g,mag,lh,flash,muz:-.67,am,glow:glowM,turbo:tb,og:optics(g,-.2,'hav')};
 }
 const guns=WP.map(w=>w.cfg.hav?buildHavoc(w.cfg):buildGun(w.cfg));
 guns.forEach(o=>{if(o.og)for(const k in o.og)o.og[k].visible=(k===S.optic);});
@@ -997,7 +1018,7 @@ function tracer(a,b,color){
 }
 const dir=new THREE.Vector3(),org=new THREE.Vector3();
 function shoot(){
-  const W=WP[P.w];P.ammo--;P.fireT=W.ft;P.kick=W.kick;{const nw=performance.now();if(nw-P.lastShot>350)P.sn=0;P.lastShot=nw;if(W.rec){const r=W.rec(P.sn);P.pitch+=r[0];P.yaw+=r[1];}else P.pitch+=W.kick*.15;P.sn++;}flash.visible=true;P.flashT=.04;if(!W.auto)fire=false;
+  const W=WP[P.w];P.ammo--;P.fireT=W.ft;P.kick=W.kick;{const nw=performance.now();if(nw-P.lastShot>350)P.sn=0;P.lastShot=nw;if(W.rec){const r=W.rec(P.sn),hf=1+.25*(1-P.adsT);P.pitch+=r[0]*hf;P.yaw+=r[1]*hf;}else P.pitch+=W.kick*.15;P.sn++;}flash.visible=true;P.flashT=.04;if(!W.auto)fire=false;
   cam.getWorldDirection(dir);
   const sg=W.sp*(1-W.ar*P.adsT)*(W.bloom?1+Math.min(1,P.sn*W.bloom)*(1-P.adsT):1);   // 腰だめ連射ほどさらにばらけるdir.x+=(Math.random()-.5)*sg;dir.y+=(Math.random()-.5)*sg;dir.z+=(Math.random()-.5)*sg;dir.normalize();
   cam.getWorldPosition(org);rc.set(org,dir);rc.far=150;
@@ -1076,7 +1097,7 @@ function update(dt){
   P.fireT-=dt;P.kick=Math.max(0,P.kick-dt*.4);
   if(P.reload>0){P.reload-=dt;if(P.reload<=0){P.reload=0;P.ammo=WP[P.w].mag;}}
   {const W0=WP[P.w];   // チャージ: 押している間にたまり、離すと0.1秒後から減っていく
-   if(W0.chg){if(fire&&P.ammo>0&&!P.reload&&!P.un&&G.cd<=0&&!P.dead&&P.climbT<=0){P.chg=Math.min(1,P.chg+dt/W0.chg);P.chgR=0;}else{P.chgR+=dt;if(P.chgR>W0.chgDelay)P.chg=Math.max(0,P.chg-dt/W0.chgDecay);}}
+   if(W0.chg){if(fire&&P.ammo>0&&!P.reload&&!P.un&&G.cd<=0&&!P.dead&&P.climbT<=0){P.chg=Math.min(1,P.chg+dt/(S.turbo?.01:W0.chg));P.chgR=0;}else{P.chgR+=dt;if(P.chgR>(S.turbo?0:W0.chgDelay))P.chg=Math.max(0,P.chg-dt/(S.turbo?.001:W0.chgDecay));}}
    else P.chg=1;}
   if(fire&&!P.dead&&G.cd<=0&&P.fireT<=0&&!P.reload&&!P.un&&P.chg>=1){if(P.ammo>0)shoot();else reload();}
   else if(fire&&!P.dead&&P.un&&G.cd<=0&&P.fireT<=0&&P.climbT<=0)punch();
@@ -1153,7 +1174,7 @@ function update(dt){
   gun.visible=P.climbT<=0&&!P.un&&!(P.w===2&&P.adsT>.6);arms.visible=P.climbT>0||P.un||P.punchT>0;
   {const og=guns[P.w]&&guns[P.w].og;if(og)for(const k in og){const q=og[k],on=k===S.optic;q.visible=on;if(on)q.scale.setScalar(1+(q.userData.s-1)*P.adsT);}}
   {const am=guns[P.w]&&guns[P.w].am;if(am&&am.last!==P.ammo){am.last=P.ammo;am.draw(P.ammo);}}
-  {const gl=guns[P.w]&&guns[P.w].glow;if(gl)gl.color.setRGB(.25+.75*P.chg,.18+.4*P.chg,.06+.1*P.chg);}   // ハボックのチャージ表示
+  {const gu=guns[P.w],gl=gu&&gu.glow;if(gl)gl.color.setRGB(.1+.25*P.chg,.3+.62*P.chg,.45+.55*P.chg);if(gu&&gu.turbo)gu.turbo.visible=!!S.turbo;}   // ハボックのチャージ表示
   if(P.climbT>0){const t=1-P.climbT/.55;arms.position.set(0,-.5+.5*t,-.05);}
   else if(P.un||P.punchT>0){const ps=P.punchT>0?Math.sin(Math.PI*(1-P.punchT/.25)):0;arms.position.set((P.pa?1:-1)*.1*ps,-.52+Math.sin(performance.now()/110)*.03*Math.min(1,spd2/9)*(P.ground?1:0)+.05*ps,-.05-.45*ps);}
   if(P.dead&&G.mode==='coop'){const o=D.opp;if(o&&!o.dead){cam.position.set(o.e.g.position.x,o.e.g.position.y+1.7,o.e.g.position.z);cam.rotation.set(0,o.tyaw,0);}gun.visible=false;arms.visible=false;}   // 観戦

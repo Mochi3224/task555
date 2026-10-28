@@ -13,6 +13,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ice);font-family
 canvas{display:block}
 .ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(12,15,22,.92);z-index:10;text-align:center;padding:20px}
 .hide{display:none!important}
+.setp{display:flex;flex-direction:column;align-items:center;gap:10px}
 #smoke{position:absolute;inset:0;background:radial-gradient(circle at center,rgba(214,218,222,.88),rgba(190,195,200,.97));opacity:0;pointer-events:none}
 #items{position:absolute;left:24px;bottom:126px;font-size:18px;color:var(--steel)}
 #useBar{position:absolute;left:50%;bottom:22%;transform:translateX(-50%);width:260px;height:14px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.3)}
@@ -85,17 +86,27 @@ button.sel{background:var(--ice);color:var(--bg)}
 
 <div id="menu" class="ov hide">
   <div id="user"><img id="uImg" alt=""><div style="text-align:left"><b id="uName"></b><p id="uStat"></p></div></div>
-  <p>レジェンドを選択</p>
-  <div class="row" id="legends"></div>
-  <p id="legDesc"></p>
-  <p>武器を選択</p><div class="row" id="weapons"></div>
-  <p>スコープ(アサルト・SMG用)</p><div class="row" id="menuO"></div>
-  <div class="row" id="menuT"></div>
-  <div class="row"><button id="btnStart">出撃</button><button id="btnVs">対戦・協力</button><button id="btnSetMenu" class="alt">設定</button><button id="btnOut" class="alt">ログアウト</button></div>
+  <p id="selSum"></p>
+  <div class="row"><button id="btnStart">出撃</button><button id="btnVs">対戦・協力</button></div>
+  <div class="row"><button id="btnSelW" class="alt">武器選択</button><button id="btnSelL" class="alt">キャラ選択</button><button id="btnSetMenu" class="alt">設定</button><button id="btnOut" class="alt">ログアウト</button></div>
   <div class="card"><b>ランキング(最多キル)</b><ol id="board"></ol></div>
   <p>WASD 移動(Wで徐々に加速) / Shift しゃがみ・スライディング(滑り中もジャンプ可) / Space ジャンプ・空中でマウスを回しながらA/Dでストレイフ / 壁の前でW+Spaceで壁登り→登り中にSpaceでブースト / 空中で壁に触れてSpaceを押し直すと壁ジャンプ / 左クリック 射撃 / 右クリック スコープ / 1:アサルト 2:SMG 4:スナイパー 5:ハボック 6:ウィングマン / 3:素手(1.3倍速・左クリックで殴る=4回で倒せる)⇔武器を出す / ホイール前:少し前進(連続で加速)・ホイール後ろ:ジャンプ / R リロード / Q アビリティ / ESC 一時停止(再開・設定・タイトル)</p>
 </div>
 
+<div id="selL" class="ov hide" style="z-index:15">
+  <h1>キャラ選択</h1>
+  <div class="row" id="legends"></div>
+  <p id="legDesc"></p>
+  <button id="btnSelLClose">決定</button>
+</div>
+<div id="selW" class="ov hide" style="z-index:15">
+  <h1>武器選択</h1>
+  <div class="row" id="weapons"></div>
+  <p id="wInfo"></p>
+  <p>スコープ(アサルト・SMG・ハボック・ウィングマン用)</p><div class="row" id="menuO"></div>
+  <div class="row" id="menuT"></div>
+  <button id="btnSelWClose">決定</button>
+</div>
 <div id="vs" class="ov hide">
   <h1>対戦</h1>
   <p>レジェンドと武器を選択</p><div class="row" id="vsLegends"></div><div class="row" id="vsW"></div>
@@ -116,12 +127,12 @@ button.sel{background:var(--ice);color:var(--bg)}
   <p>タイトルへ戻ると、ここまでの戦績が保存されます</p></div>
 <div id="settings" class="ov hide" style="z-index:20">
   <h1>設定</h1>
-  <div id="sliders" class="card"></div>
-  <p>スコープの種類(アサルト・SMG用)</p><div class="row" id="optBox"></div>
-  <p>アタッチメント</p><div class="row" id="turboBox"></div>
-  <details class="card"><summary>キー設定(タップで開閉)</summary><div id="keysBox"></div><button id="keysReset" class="alt">キー設定を初期化</button></details>
-  <details class="card"><summary>コントローラ配置(タップで開閉)</summary><div id="padBox"></div><button id="padReset" class="alt">コントローラ配置を初期化(Apex標準)</button></details>
-  <p>FPS上限・軽量化</p><div class="row" id="opts"></div>
+  <div class="row" id="setTabs"></div>
+  <div id="setP0" class="setp"><div id="sliders" class="card"></div></div>
+  <div id="setP1" class="setp hide"><p>スコープの種類(アサルト・SMG・ハボック・ウィングマン用)</p><div class="row" id="optBox"></div><div id="sliderScope" class="card"></div><p>アタッチメント</p><div class="row" id="turboBox"></div></div>
+  <div id="setP2" class="setp hide"><div class="card"><div id="keysBox"></div></div><button id="keysReset" class="alt">キー設定を初期化</button></div>
+  <div id="setP3" class="setp hide"><div class="card"><div id="padBox"></div></div><button id="padReset" class="alt">コントローラ配置を初期化(Apex標準)</button></div>
+  <div id="setP4" class="setp hide"><div id="sliderSnd" class="card"></div><p>FPS上限・軽量化</p><div class="row" id="opts"></div></div>
   <button id="btnSetClose">閉じる</button>
 </div>
 
@@ -217,7 +228,7 @@ function drawLegends(){
     for(const k in LEG){const b=document.createElement('button');b.textContent=LEG[k].n;b.className=k===pick?'sel':'alt';
       b.onclick=()=>{pick=k;drawLegends();};box.appendChild(b);}
   }
-  $('legDesc').textContent=LEG[pick].d;
+  $('legDesc').textContent=LEG[pick].d;drawSum();
 }
 drawLegends();
 
@@ -238,7 +249,10 @@ function drawWeapons(){
     const b=$(id);b.replaceChildren();
     WP.forEach((w,i)=>{const x=document.createElement('button');x.textContent=w.n;x.className=i===pickW?'sel':'alt';x.onclick=()=>{pickW=i;drawWeapons();};b.appendChild(x);});
   }
+  {const w=WP[pickW];$('wInfo').textContent=`${w.n}: マガジン${w.mag}発 / ダメージ 胴${w.bd}・頭${w.hd} / 連射 毎秒${(1/w.ft).toFixed(1)}発 / リロード${w.rt}秒${w.auto?'':' / 単発'}`;}
+  drawSum();
 }
+function drawSum(){try{$('selSum').textContent=`キャラ: ${LEG[pick].n}  /  武器: ${WP[pickW].n}  /  スコープ: ${OPT[S.optic].n}`;}catch(e){}}
 function drawPauseW(){   // 一時停止中の武器選択
   const b=$('pauseW');b.replaceChildren();
   WP.forEach((w,i)=>{const x=document.createElement('button');x.textContent=w.n;x.className=(P.w===i&&!P.un)?'sel':'alt';x.onclick=()=>{P.un=false;P.eq=1;setWeapon(i);drawPauseW();};b.appendChild(x);});
@@ -253,17 +267,20 @@ const setT=(el,t)=>{t=String(t);if(el.textContent!==t)el.textContent=t;};
 const hpI=$('hp').firstChild,shI=$('sh').firstChild,amE=$('am'),rlE=$('reload'),waveE=$('wave'),killE=$('kills'),abE=$('abil'),bossE=$('boss'),invE=$('inv'),fpsE=$('fps');
 const SLD=[['sens','マウス感度',.2,3,.05,v=>v.toFixed(2)],['ads','スコープ中の感度(通常比)',.2,1.5,.05,v=>v.toFixed(2)],['zoom','スコープ倍率',.5,2,.05,v=>v.toFixed(2)+'倍'],['fov','視野角(FOV)',60,110,1,v=>v+'°'],['gsens','スティック感度',.3,2.5,.05,v=>v.toFixed(2)],['vol','足音の音量',0,1,.05,v=>Math.round(v*100)+'%'],['aa','エイムアシストの強さ(コントローラ)',0,1,.05,v=>v.toFixed(2)]];
 function drawSliders(){
-  const b=$('sliders');b.replaceChildren();
+  const GR={sens:'sliders',ads:'sliders',gsens:'sliders',aa:'sliders',fov:'sliders',zoom:'sliderScope',vol:'sliderSnd'};
+  for(const id of ['sliders','sliderScope','sliderSnd'])$(id).replaceChildren();
   SLD.forEach(([k,n,mn,mx,st,f])=>{
     const w=document.createElement('label'),t=document.createElement('span'),i=document.createElement('input');
     w.className='sl';i.type='range';i.min=mn;i.max=mx;i.step=st;i.value=S[k];
     const upd=()=>{t.textContent=`${n}: ${f(+i.value)}`;};upd();
     i.oninput=()=>{S[k]=+i.value;upd();saveS();if(k==='fov'){cam.fov=S.fov;cam.updateProjectionMatrix();}};
-    w.append(t,i);b.appendChild(w);
+    w.append(t,i);$(GR[k]||'sliders').appendChild(w);
   });
 }
 $('btnSetLogin').onclick=$('btnSetMenu').onclick=$('btnPSet').onclick=()=>show('settings',1);
 $('btnSetClose').onclick=()=>show('settings',0);
+$('btnSelL').onclick=()=>show('selL',1);$('btnSelLClose').onclick=()=>show('selL',0);
+$('btnSelW').onclick=()=>show('selW',1);$('btnSelWClose').onclick=()=>show('selW',0);
 const KD={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',jump:'Space',slide:'ShiftLeft',reload:'KeyR',abil:'KeyQ',w1:'Digit1',w2:'Digit2',un:'Digit3',w4:'Digit4',w5:'Digit5',w6:'Digit6',melee:'KeyV',ult:'KeyZ',cell:'KeyC',kit:'KeyX'};
 const KN={fwd:'前進',back:'後退',left:'左',right:'右',jump:'ジャンプ',slide:'スライディング・しゃがみ',reload:'リロード',abil:'アビリティ',w1:'武器1(アサルト)',w2:'武器2(SMG)',un:'素手 ⇔ 武器',w4:'武器4(スナイパー)',w5:'武器5(ハボック)',w6:'武器6(ウィングマン)',melee:'近接(殴る)',ult:'アルティメット(バンガロール)',cell:'シールドセル',kit:'注射器'};
 const KB=Object.assign({},KD);
@@ -305,6 +322,11 @@ function applyOptic(){
   $('sfr').className='hide';
   $('ret').innerHTML=sn?RET.snp:(P.w===3&&S.optic==='iron'?RET.hav:RET[S.optic]);
 }
+const TABS=['感度・視野','スコープ','キー設定','コントローラ','画質・音'];let setTab=0;
+function drawTabs(){
+  const b=$('setTabs');b.replaceChildren();
+  TABS.forEach((n,i)=>{const x=document.createElement('button');x.textContent=n;x.className=i===setTab?'sel':'alt';x.onclick=()=>{setTab=i;drawTabs();};b.appendChild(x);show('setP'+i,i===setTab);});
+}
 function drawTurbo(){   // ターボチャージャー: スピンアップ時間を短縮(チャージ0.01秒、減少0秒)
   for(const id of ['turboBox','pauseT','menuT']){
     const b=$(id);b.replaceChildren();
@@ -312,7 +334,7 @@ function drawTurbo(){   // ターボチャージャー: スピンアップ時間
     x.onclick=()=>{S.turbo=!S.turbo;saveS();drawTurbo();};b.appendChild(x);
   }
 }
-function drawOptics(){
+function drawOptics(){drawSum();
   for(const id of ['optBox','pauseO','menuO']){
     const b=$(id);b.replaceChildren();
     for(const k in OPT){const x=document.createElement('button');x.textContent=OPT[k].n;x.className=k===S.optic?'sel':'alt';x.onclick=()=>{S.optic=k;saveS();drawOptics();applyOptic();};b.appendChild(x);}
@@ -524,7 +546,7 @@ function padPoll(dt){
   if(hit('swap')&&P.climbT<=0){P.un=false;P.eq=1;setWeapon((P.w+1)%WP.length);}
   for(const [a,n] of [['w1',0],['w2',1],['w4',2],['w5',3],['w6',4]])if(hit(a)&&P.climbT<=0){P.un=false;P.eq=1;setWeapon(n);}
 }
-drawWeapons();drawOpts();drawSliders();drawKeys();drawPad();drawOptics();drawTurbo();
+drawWeapons();drawOpts();drawSliders();drawKeys();drawPad();drawOptics();drawTurbo();drawTabs();
 
 /* ---------- 対戦モード(1対1) ---------- */
 const D={kind:'cpu',role:'host',code:'',unsubs:[],opp:null,m:0,started:false,ready:false,seen:0,sn:0,shots:0,sendT:0,lastRx:0,oppUid:'',oppName:'',oppLg:'',gm:'duel',lvl:'normal',dmgTo:0,eh:{},ehSeen:{},gb:[],over:0,wSeen:0,myRef:null};

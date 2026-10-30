@@ -13,6 +13,9 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ice);font-family
 canvas{display:block}
 .ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(12,15,22,.92);z-index:10;text-align:center;padding:20px}
 .hide{display:none!important}
+#chgBar{position:absolute;right:28px;bottom:112px;width:200px;height:14px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.3)}
+#chgBar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2aa6ff,#7fe6ff)}
+#chgBar b{position:absolute;left:0;right:0;top:-24px;text-align:right;font-size:18px;font-weight:700}
 .setp{display:flex;flex-direction:column;align-items:center;gap:10px}
 #smoke{position:absolute;inset:0;background:radial-gradient(circle at center,rgba(214,218,222,.88),rgba(190,195,200,.97));opacity:0;pointer-events:none}
 #items{position:absolute;left:24px;bottom:126px;font-size:18px;color:var(--steel)}
@@ -90,7 +93,7 @@ button.sel{background:var(--ice);color:var(--bg)}
   <div class="row"><button id="btnStart">出撃</button><button id="btnVs">対戦・協力</button></div>
   <div class="row"><button id="btnSelW" class="alt">武器選択</button><button id="btnSelL" class="alt">キャラ選択</button><button id="btnSetMenu" class="alt">設定</button><button id="btnOut" class="alt">ログアウト</button></div>
   <div class="card"><b>ランキング(最多キル)</b><ol id="board"></ol></div>
-  <p>WASD 移動(Wで徐々に加速) / Shift しゃがみ・スライディング(滑り中もジャンプ可) / Space ジャンプ・空中でマウスを回しながらA/Dでストレイフ / 壁の前でW+Spaceで壁登り→登り中にSpaceでブースト / 空中で壁に触れてSpaceを押し直すと壁ジャンプ / 左クリック 射撃 / 右クリック スコープ / 1:アサルト 2:SMG 4:スナイパー 5:ハボック 6:ウィングマン / 3:素手(1.3倍速・左クリックで殴る=4回で倒せる)⇔武器を出す / ホイール前:少し前進(連続で加速)・ホイール後ろ:ジャンプ / R リロード / Q アビリティ / ESC 一時停止(再開・設定・タイトル)</p>
+  <p>WASD 移動(Wで徐々に加速) / Shift しゃがみ・スライディング(滑り中もジャンプ可) / Space ジャンプ・空中でマウスを回しながらA/Dでストレイフ / 壁の前でW+Spaceで壁登り→登り中にSpaceでブースト / 空中で壁に触れてSpaceを押し直すと壁ジャンプ / 左クリック 射撃 / 右クリック スコープ / 1:アサルト 2:SMG 4:スナイパー 5:ハボック 6:ウィングマン 7:ネメシス / 3:素手(1.3倍速・左クリックで殴る=4回で倒せる)⇔武器を出す / ホイール前:少し前進(連続で加速)・ホイール後ろ:ジャンプ / R リロード / Q アビリティ / ESC 一時停止(再開・設定・タイトル)</p>
 </div>
 
 <div id="selL" class="ov hide" style="z-index:15">
@@ -152,7 +155,7 @@ button.sel{background:var(--ice);color:var(--bg)}
   <div id="abil"></div>
   <div id="bars"><div class="bar" id="sh"><i></i></div><div class="bar" id="hp"><i></i></div></div>
   <div id="ammo"><span id="am">30</span><small id="reload"></small></div>
-  <div id="flash"></div><div id="inv"></div><div id="boss"></div><div id="cd"></div><div id="items"></div><div id="useBar" class="hide"><i></i><b></b></div><div id="spec" class="hide">観戦中 — 次のウェーブで復活します</div><div id="fps"></div>
+  <div id="flash"></div><div id="inv"></div><div id="boss"></div><div id="cd"></div><div id="items"></div><div id="chgBar" class="hide"><i></i><b></b></div><div id="useBar" class="hide"><i></i><b></b></div><div id="spec" class="hide">観戦中 — 次のウェーブで復活します</div><div id="fps"></div>
 </div>
 
 <script type="module">
@@ -245,7 +248,10 @@ const WP=[
   cfg:{hav:1}},
  // ウィングマン: 単発・頭72/胴48/手足43(頭1.5倍)・毎秒2.73発(DPS約131)・リロード2.1秒・マガジン6発・構え中も移動速度は落ちない
  {n:'ウィングマン(ピストル)',mag:6,rt:2.1,ft:1/2.73,bd:48,hd:72,lg:43/48,sp:.035,ar:.95,kick:.09,auto:0,zf:45,as:1,dep:.4,
-  rec:()=>[.02+Math.random()*.006,(Math.random()-.5)*.006],cfg:{wing:1}}
+  rec:()=>[.02+Math.random()*.006,(Math.random()-.5)*.006],cfg:{wing:1}},
+ // ネメシス: エネルギーAR・4点バースト(長押しで連続)・胴17/頭22・マガジン32・撃つほどチャージがたまり連射とDPSが上がる(DPS175〜201)
+ {n:'ネメシス(バーストAR)',mag:32,rt:2.2,ft:.062,bd:17,hd:22,sp:.022,ar:.8,kick:.035,auto:1,zf:45,dep:.5,burst:4,ib:.062,rate0:10.3,rate1:11.8,gain:.032,gauge:1,
+  rec:()=>[.006+Math.random()*.003,(Math.random()-.5)*.004],cfg:{nem:1}}
 ];
 function drawWeapons(){
   for(const id of ['weapons','vsW']){
@@ -284,8 +290,8 @@ $('btnSetLogin').onclick=$('btnSetMenu').onclick=$('btnPSet').onclick=()=>show('
 $('btnSetClose').onclick=()=>show('settings',0);
 $('btnSelL').onclick=()=>show('selL',1);$('btnSelLClose').onclick=()=>show('selL',0);
 $('btnSelW').onclick=()=>show('selW',1);$('btnSelWClose').onclick=()=>show('selW',0);
-const KD={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',jump:'Space',slide:'ShiftLeft',reload:'KeyR',abil:'KeyQ',w1:'Digit1',w2:'Digit2',un:'Digit3',w4:'Digit4',w5:'Digit5',w6:'Digit6',melee:'KeyV',ult:'KeyZ',cell:'KeyC',kit:'KeyX'};
-const KN={fwd:'前進',back:'後退',left:'左',right:'右',jump:'ジャンプ',slide:'スライディング・しゃがみ',reload:'リロード',abil:'アビリティ',w1:'武器1(アサルト)',w2:'武器2(SMG)',un:'素手 ⇔ 武器',w4:'武器4(スナイパー)',w5:'武器5(ハボック)',w6:'武器6(ウィングマン)',melee:'近接(殴る)',ult:'アルティメット(バンガロール)',cell:'シールドセル',kit:'注射器'};
+const KD={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',jump:'Space',slide:'ShiftLeft',reload:'KeyR',abil:'KeyQ',w1:'Digit1',w2:'Digit2',un:'Digit3',w4:'Digit4',w5:'Digit5',w6:'Digit6',w7:'Digit7',melee:'KeyV',ult:'KeyZ',cell:'KeyC',kit:'KeyX'};
+const KN={fwd:'前進',back:'後退',left:'左',right:'右',jump:'ジャンプ',slide:'スライディング・しゃがみ',reload:'リロード',abil:'アビリティ',w1:'武器1(アサルト)',w2:'武器2(SMG)',un:'素手 ⇔ 武器',w4:'武器4(スナイパー)',w5:'武器5(ハボック)',w6:'武器6(ウィングマン)',w7:'武器7(ネメシス)',melee:'近接(殴る)',ult:'アルティメット(バンガロール)',cell:'シールドセル',kit:'注射器'};
 const KB=Object.assign({},KD);
 try{Object.assign(KB,JSON.parse(localStorage.getItem('apexKeys')||'{}'));}catch(e){}
 const saveK=()=>{try{localStorage.setItem('apexKeys',JSON.stringify(KB));}catch(e){}};
@@ -487,8 +493,8 @@ function initCoop(){
   if(!guest)nextWave();
 }
 /* ---- コントローラ(Apex標準に近い初期配置・変更可) ---- */
-const PD={jump:0,slide:1,reload:2,swap:3,abil:4,un:5,melee:11,ads:6,fire:7,w1:14,w2:12,w4:15,w5:-1,w6:-1,kit:13,cell:8,ult:10,pause:9};
-const PN={jump:'ジャンプ',slide:'しゃがみ・スライディング',reload:'リロード',swap:'武器切替(順送り)',abil:'アビリティ',un:'素手 ⇔ 武器',melee:'近接(殴る)',ads:'スコープ(構え)',fire:'射撃',w1:'武器1',w2:'武器2',w4:'武器4',w5:'武器5(ハボック)',w6:'武器6(ウィングマン)',kit:'注射器を使う',cell:'シールドセルを使う',ult:'アルティメット',pause:'一時停止'};
+const PD={jump:0,slide:1,reload:2,swap:3,abil:4,un:5,melee:11,ads:6,fire:7,w1:14,w2:12,w4:15,w5:-1,w6:-1,w7:-1,kit:13,cell:8,ult:10,pause:9};
+const PN={jump:'ジャンプ',slide:'しゃがみ・スライディング',reload:'リロード',swap:'武器切替(順送り)',abil:'アビリティ',un:'素手 ⇔ 武器',melee:'近接(殴る)',ads:'スコープ(構え)',fire:'射撃',w1:'武器1',w2:'武器2',w4:'武器4',w5:'武器5(ハボック)',w6:'武器6(ウィングマン)',w7:'武器7(ネメシス)',kit:'注射器を使う',cell:'シールドセルを使う',ult:'アルティメット',pause:'一時停止'};
 const BL=['A(×)','B(○)','X(□)','Y(△)','LB(L1)','RB(R1)','LT(L2)','RT(R2)','Back','Start','L3','R3','十字↑','十字↓','十字←','十字→'];
 const PB=Object.assign({},PD);
 try{Object.assign(PB,JSON.parse(localStorage.getItem('apexPad')||'{}'));}catch(e){}
@@ -563,7 +569,7 @@ function padPoll(dt){
   if(hit('melee')&&P.climbT<=0&&P.fireT<=0&&G.cd<=0)punch();
   if(hit('un')&&P.climbT<=0){P.un=!P.un;P.reload=0;P.fireT=.3;if(!P.un)P.eq=1;}
   if(hit('swap')&&P.climbT<=0){P.un=false;P.eq=1;setWeapon((P.w+1)%WP.length);}
-  for(const [a,n] of [['w1',0],['w2',1],['w4',2],['w5',3],['w6',4]])if(hit(a)&&P.climbT<=0){P.un=false;P.eq=1;setWeapon(n);}
+  for(const [a,n] of [['w1',0],['w2',1],['w4',2],['w5',3],['w6',4],['w7',5]])if(hit(a)&&P.climbT<=0){P.un=false;P.eq=1;setWeapon(n);}
 }
 drawWeapons();drawOpts();drawSliders();drawKeys();drawPad();drawOptics();drawTurbo();drawScopeSens();drawTabs();
 
@@ -723,8 +729,14 @@ function optics(g,zf,ir){   // 照準の中心高さは .0945 にそろえてあ
   const cylY=(r,l)=>new THREE.CylinderGeometry(r,r,l,14);
   const pane=(q,w,h,z,m)=>add(q,new THREE.PlaneGeometry(w,h),m,0,.0945,z);
   /* アイアンサイト */
-  const I=mk('iron',ir==='smg'?.12:ir==='hav'?-.02:ir==='wing'?.11:.14,ir==='smg'?1.1:ir==='hav'?1.3:ir==='wing'?1.3:1.05);
-  if(ir==='wing'){   // ウィングマン: 小さな照門と細い照星
+  const I=mk('iron',ir==='smg'?.12:ir==='hav'?-.02:ir==='wing'?.11:ir==='nem'?.13:.14,ir==='smg'?1.1:ir==='hav'?1.3:ir==='wing'?1.3:ir==='nem'?1.3:1.05);
+  if(ir==='nem'){   // ネメシス: 大きなアーチ型の照門(中央の窓から照星が見える)
+    add(I,B(.07,.012,.04),oMetal,0,.066,.13);
+    add(I,B(.012,.052,.03),oMetal,-.026,.09,.13);add(I,B(.012,.052,.03),oMetal,.026,.09,.13);
+    add(I,B(.064,.01,.03),oMetal,0,.119,.13);
+    add(I,B(.012,.012,.03),oMetal,-.021,.114,.13,0,0,.785);add(I,B(.012,.012,.03),oMetal,.021,.114,.13,0,0,.785);
+    add(I,B(.014,.014,.018),oMetal,0,.068,zf);add(I,B(.0036,.0265,.004),mBlack,0,.0815,zf);add(I,B(.016,.003,.006),mBlack,0,.073,zf);
+  }else if(ir==='wing'){   // ウィングマン: 小さな照門と細い照星
     add(I,B(.034,.012,.03),oMetal,0,.068,.11);
     add(I,B(.009,.032,.016),oMetal,-.0135,.086,.11);add(I,B(.009,.032,.016),oMetal,.0135,.086,.11);add(I,B(.018,.01,.016),oMetal,0,.076,.11);
     add(I,B(.012,.012,.016),oMetal,0,.068,zf);add(I,B(.004,.0265,.004),mBlack,0,.0815,zf);
@@ -881,7 +893,48 @@ function buildWingman(c){
   const adm=new THREE.Mesh(new THREE.CircleGeometry(.016,20),new THREE.MeshBasicMaterial({map:tx,transparent:true}));adm.position.set(0,.08,.045);adm.rotation.x=-.85;g.add(adm);   // 弾数ダイヤル
   return {g,mag,lh,flash,muz:-.17,am,og:optics(g,-.13,'wing')};
 }
-const guns=WP.map(w=>w.cfg.hav?buildHavoc(w.cfg):w.cfg.wing?buildWingman(w.cfg):buildGun(w.cfg));
+const mCream=MP(0xd7d2c4,60),mTan=MP(0x8c6a42,35),mRedB=MP(0x7a3a2c,40),glowN=new THREE.MeshBasicMaterial({color:0x2a8fbf});
+function buildNemesis(c){
+  const g=new THREE.Group(),pt=(geo,mat,x,y,z,rx,rz)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.rotation.set(rx||0,0,rz||0);g.add(m);return m;};
+  const cx=(r,l)=>{const gg=new THREE.CylinderGeometry(r,r,l,24);gg.rotateZ(Math.PI/2);return gg;};
+  const bar=(z1,y1,z2,y2,t,mat)=>{const dz=z2-z1,dy=y2-y1,m=pt(B(t,t,Math.hypot(dz,dy)),mat,0,(y1+y2)/2,(z1+z2)/2);m.rotation.x=Math.atan2(-dy,dz);return m;};
+  /* 前: 長いクリーム色の本体、上のレール、茶色の照準ブロック */
+  pt(B(.064,.07,.46),mCream,0,.02,-.27);pt(B(.03,.012,.5),mBlack,0,.062,-.2);
+  pt(B(.02,.018,.02),mTan,0,.07,-.5);pt(B(.022,.02,.024),mTan,0,.072,-.02);
+  pt(B(.004,.012,.2),glowN,-.034,.036,-.27);pt(B(.004,.012,.2),glowN,.034,.036,-.27);       // 側面の光るライン
+  pt(B(.05,.05,.04),mBlack,0,.02,-.51);pt(B(.03,.012,.004),glowN,0,.02,-.532);               // 銃口
+  /* 下: 前に並ぶ赤茶色のセル6個 */
+  pt(B(.04,.012,.34),mBlack,0,-.015,-.3);
+  for(let i=0;i<6;i++)pt(B(.034,.042,.022),mRedB,0,-.04,-.46+i*.055);
+  /* 中央: 回転する大きな円盤(チャージで速く回る) */
+  const disk=new THREE.Group();disk.position.set(0,.012,.0);g.add(disk);
+  const dm=(geo,mat,x=0)=>{const m=new THREE.Mesh(geo,mat);m.position.x=x;disk.add(m);};
+  dm(cx(.075,.082),mCream);dm(cx(.062,.088),mSteel);dm(cx(.048,.09),mCream);dm(cx(.026,.094),mTan);
+  for(let i=0;i<8;i++){const a=i*Math.PI/4,m=new THREE.Mesh(B(.09,.01,.012),mBlack);m.position.set(0,Math.sin(a)*.055,Math.cos(a)*.055);m.rotation.x=a;disk.add(m);}
+  /* 後ろ: レシーバーと茶色のストック、グリップ、三角形の枠 */
+  pt(B(.07,.095,.2),mCream,0,-.003,.13);
+  pt(B(.055,.05,.2),mTan,0,.018,.33);pt(B(.06,.12,.02),mBlack,0,-.01,.44);
+  pt(B(.04,.13,.055),mTan,0,-.11,.13,-.3);bar(.11,-.17,.34,-.06,.02,mTan);
+  /* 前の三角形のトリガーガード */
+  bar(-.02,-.04,-.08,-.1,.016,mBlack);bar(-.08,-.1,-.2,-.1,.016,mBlack);bar(-.2,-.1,-.24,-.04,.016,mBlack);
+  /* エネルギーセル(リロードで動く) */
+  const mag=pt(B(.05,.08,.07),mBlack,0,-.085,.03);mag.userData.y0=-.085;
+  const ln=new THREE.Mesh(B(.004,.07,.05),glowN);ln.position.set(.027,0,0);mag.add(ln);
+  /* 手 */
+  pt(B(.05,.05,.08),glove,.012,-.1,.14,-.28);pt(B(.055,.055,.3),sleeve,.03,-.15,.33,.35);
+  const lh=new THREE.Group();g.add(lh);
+  const lp=(geo,m,x,y,z,rx,ry)=>{const q=new THREE.Mesh(geo,m);q.position.set(x,y,z);q.rotation.set(rx,ry,0);lh.add(q);};
+  lp(B(.055,.05,.1),glove,0,-.12,-.22,0,0);lp(B(.055,.055,.4),sleeve,-.07,-.15,-.02,-.1,-.35);
+  const flash=pt(new THREE.SphereGeometry(.04,8,6),flashMat,0,.02,-.58);flash.visible=false;
+  /* 弾数ディスプレイ(青い枠) */
+  const cv=document.createElement('canvas');cv.width=128;cv.height=96;const cx2=cv.getContext('2d'),tx=new THREE.CanvasTexture(cv);tx.colorSpace=THREE.SRGBColorSpace;
+  const am={last:-1,draw:n=>{cx2.fillStyle='#0a1218';cx2.fillRect(0,0,128,96);cx2.strokeStyle='#3aa6ff';cx2.lineWidth=7;cx2.strokeRect(4,4,120,88);cx2.fillStyle='#fff';cx2.font='bold 62px sans-serif';cx2.textAlign='center';cx2.textBaseline='middle';cx2.fillText(String(n),64,50);tx.needsUpdate=true;}};
+  am.draw(0);
+  pt(B(.06,.012,.05),mBlack,0,.05,.21);
+  const adm=new THREE.Mesh(new THREE.PlaneGeometry(.05,.038),new THREE.MeshBasicMaterial({map:tx}));adm.position.set(0,.062,.215);adm.rotation.x=-.95;g.add(adm);
+  return {g,mag,lh,flash,muz:-.58,am,glow:glowN,nem:1,disk,og:optics(g,-.5,'nem')};
+}
+const guns=WP.map(w=>w.cfg.hav?buildHavoc(w.cfg):w.cfg.wing?buildWingman(w.cfg):w.cfg.nem?buildNemesis(w.cfg):buildGun(w.cfg));
 guns.forEach(o=>{if(o.og)for(const k in o.og)o.og[k].visible=(k===S.optic);});
 guns.forEach((o,i)=>{o.g.visible=i===0;o.g.position.set(.22,-.2,-.5);cam.add(o.g);});
 let gun=guns[0].g,mag=guns[0].mag,lh=guns[0].lh,flash=guns[0].flash,muz=guns[0].muz;
@@ -916,7 +969,7 @@ function collide(p,r,feet){
 /* ---------- ゲーム状態 ---------- */
 const G={running:false,over:false,legend:'wraith'};
 const P={pos:new THREE.Vector3(),vy:0,ground:true,yaw:0,pitch:0,hp:100,sh:50,ammo:30,reload:0,fireT:0,cd:0,dash:0,boost:0,kills:0,wave:0,kick:0,eye:1.7,adsT:0,slide:0,sdx:0,sdz:-1,lx:0,lz:-1,flashT:0,vx:0,vz:0,sj:false,climbT:0,jp:false,ramp:0,dip:0,roll:0,sw:0,w:0,am:[30,32,5],rt:1.6,inv:0,hurtT:0,wj:0,wjT:0,un:false,eq:0};
-Object.assign(P,{push:0,pa:0,punchT:0,gx:0,gy:0,dead:false,chg:1,chgR:0,sn:0,lastShot:0,smk:2,smkT:0,ult:0,lk:0,cell:0,kit:0,use:null,dtT:0,shake:0,smk2:0});
+Object.assign(P,{push:0,pa:0,punchT:0,gx:0,gy:0,dead:false,chg:1,chgR:0,sn:0,lastShot:0,smk:2,smkT:0,ult:0,lk:0,cell:0,kit:0,use:null,dtT:0,shake:0,smk2:0,nch:0,bn:0});
 let bullets=[],enemies=[],tracers=[],keys={},fire=false,adsHeld=false,locked=false,waveWait=0;
 const rc=new THREE.Raycaster();
 const eMatBody=new THREE.MeshLambertMaterial({color:0xc0392b}),eMatHead=new THREE.MeshLambertMaterial({color:0xf0c8a0}),eMatLeg=new THREE.MeshLambertMaterial({color:0x2c3e50});
@@ -1022,6 +1075,7 @@ const canGeo=(()=>{const g=new THREE.CylinderGeometry(.04,.04,.16,10);g.rotateX(
 const sphGeo=new THREE.SphereGeometry(1,12,10),mslGeo=new THREE.CylinderGeometry(.14,.14,1.6,8),mslMat=new THREE.MeshBasicMaterial({color:0xff5030}),beamGeo=new THREE.CylinderGeometry(.12,.12,70,8);
 let cans=[],smokes=[],ults=[],fxs=[];
 const smokeE=$('smoke'),itemsE=$('items'),useBarE=$('useBar'),useFillE=useBarE.firstChild,useTxtE=useBarE.lastChild;
+const chgE=$('chgBar'),chgFill=chgE.firstChild,chgTxt=chgE.lastChild;
 /* 回復モーション用の手とアイテム(シールドセル・注射器) */
 const useG=new THREE.Group();cam.add(useG);useG.visible=false;
 {const hnd=new THREE.Mesh(B(.07,.06,.1),glove);hnd.position.set(0,-.03,.05);useG.add(hnd);
@@ -1081,7 +1135,13 @@ function useItem(type){   // シールドセル: 3秒で+25 / 注射器: 5秒で
   else{if(P.kit<=0||P.hp>=100)return;P.use={type,t:5,dur:5};}
   adsHeld=false;
 }
+function nemGap(W){   // 4点バースト: 撃つたびにチャージがたまり、チャージが高いほどバースト間の間隔が短くなる
+  P.nch=Math.min(1,P.nch+W.gain);P.bn=(P.bn||0)+1;
+  if(P.bn>=W.burst){P.bn=0;const rate=W.rate0+(W.rate1-W.rate0)*P.nch;return W.burst/rate-(W.burst-1)*W.ib;}
+  return W.ib;
+}
 function updGadgets(dt){
+  if(P.nch>0&&performance.now()-P.lastShot>400)P.nch=Math.max(0,P.nch-dt*.2);   // 撃つのをやめると約5秒で減る
   P.dtT=Math.max(0,P.dtT-dt);
   if(P.smk<2){P.smkT-=dt;if(P.smkT<=0){P.smk++;P.smkT=P.smk<2?20:0;}}
   for(const c of cans){   // スモーク缶の飛行
@@ -1116,17 +1176,18 @@ function updGadgets(dt){
     gun.visible=false;arms.visible=false;
   }
   setT(itemsE,`シールドセル ${P.cell}   注射器 ${P.kit}`);
+  {const gg=WP[P.w].gauge;chgE.classList.toggle('hide',!gg);if(gg){chgFill.style.width=Math.round(P.nch*100)+'%';setT(chgTxt,`チャージ ${Math.round(P.nch*100)}%`);}}   // チャージゲージ 0〜100%
 }
 function setWeapon(n){
   if(n===P.w)return;P.use=null;
   const first0=P.w<0;if(P.w>=0)P.am[P.w]=P.ammo;
-  P.w=n;P.ammo=P.am[n];P.reload=0;P.fireT=first0?(WP[n].first||.35):(WP[n].dep||.35);P.chg=WP[n].chg?0:1;P.sn=0;
+  P.w=n;P.ammo=P.am[n];P.reload=0;P.fireT=first0?(WP[n].first||.35):(WP[n].dep||.35);P.chg=WP[n].chg?0:1;P.sn=0;P.bn=0;
   const o=guns[n];gun=o.g;mag=o.mag;lh=o.lh;flash=o.flash;muz=o.muz;
   guns.forEach(q=>{q.g.visible=q===o;q.flash.visible=false;});
   applyOptic();
 }
 function startGame(duel){
-  G.legend=pick;G.running=true;G.over=false;G.mode=duel==='coop'?'coop':duel?'duel':'wave';G.cd=0;G.goT=0;P.push=0;P.punchT=0;P.dead=false;P.gx=P.gy=0;G.paused=false;clearKeys();setSkin(pick);audioInit();P.smk=2;P.smkT=0;P.ult=0;P.lk=0;P.cell=0;P.kit=0;P.use=null;P.dtT=0;P.shake=0;P.smk2=0;clearFx();
+  G.legend=pick;G.running=true;G.over=false;G.mode=duel==='coop'?'coop':duel?'duel':'wave';G.cd=0;G.goT=0;P.push=0;P.punchT=0;P.dead=false;P.gx=P.gy=0;G.paused=false;clearKeys();setSkin(pick);audioInit();P.smk=2;P.smkT=0;P.ult=0;P.lk=0;P.cell=0;P.kit=0;P.use=null;P.dtT=0;P.shake=0;P.smk2=0;P.nch=0;P.bn=0;clearFx();
   Object.assign(P,{vy:0,ground:true,yaw:0,pitch:0,hp:100,sh:50,ammo:30,reload:0,fireT:0,cd:0,dash:0,boost:0,kills:0,wave:0,kick:0,eye:1.7,adsT:0,slide:0,sdx:0,sdz:-1,lx:0,lz:-1,flashT:0,vx:0,vz:0,sj:false,climbT:0,jp:false,ramp:0,dip:0,roll:0,sw:0,w:0,am:[30,32,5],rt:1.6,inv:0,hurtT:0,wj:0,wjT:0,un:false,eq:0});
   P.pos.set(0,0,0);
   enemies.forEach(e=>scene.remove(e.g));enemies=[];bullets.forEach(q=>scene.remove(q.m));bullets=[];adsHeld=false;fire=false;P.am=WP.map(w=>w.mag);P.w=-1;setWeapon(pickW);
@@ -1171,7 +1232,7 @@ addEventListener('keydown',e=>{
   if(c==='KeyQ')ability();
   if(c==='KeyZ')ultimate();if(c==='KeyC')useItem('cell');if(c==='KeyX')useItem('kit');
   if(c==='KeyV'&&P.climbT<=0&&G.cd<=0&&!P.dead&&P.fireT<=0)punch();
-  const dk={Digit1:0,Digit2:1,Digit4:2,Digit5:3,Digit6:4}[c];
+  const dk={Digit1:0,Digit2:1,Digit4:2,Digit5:3,Digit6:4,Digit7:5}[c];
   if(c==='Digit3'&&P.climbT<=0){P.un=!P.un;P.reload=0;P.fireT=.3;if(!P.un)P.eq=1;}   // 素手 ⇔ 武器
   else if(dk!==undefined&&P.climbT<=0){P.un=false;P.eq=1;setWeapon(dk);}
   if(c==='ShiftLeft'&&!e.repeat&&P.ground&&P.slide<=0&&(keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD)){P.slide=1.4;const s0=Math.max(13,Math.hypot(P.vx,P.vz));P.vx=P.lx*s0;P.vz=P.lz*s0;}
@@ -1199,7 +1260,7 @@ function punch(){
   const c=$('cross');c.classList.add('hit');setTimeout(()=>c.classList.remove('hit'),90);
   if(e.hp<=0){scene.remove(e.g);enemies=enemies.filter(x=>x!==e);P.kills+=e.boss?5:1;}
 }
-function reload(){const W=WP[P.w];if(!P.un&&!P.reload&&P.ammo<W.mag)P.reload=P.rt=W.rt;}
+function reload(){const W=WP[P.w];if(!P.un&&!P.reload&&P.ammo<W.mag)P.reload=P.rt=W.rt;P.bn=0;}
 function ability(){
   if(P.cd>0||G.cd>0||P.dead)return;P.cd=LEG[G.legend].cd;
   if(G.legend==='bangalore'){if(P.smk<=0){P.cd=0;return;}P.smk--;if(P.smkT<=0)P.smkT=20;launchSmoke();}
@@ -1220,7 +1281,7 @@ function tracer(a,b,color){
 }
 const dir=new THREE.Vector3(),org=new THREE.Vector3();
 function shoot(){
-  const W=WP[P.w];P.ammo--;P.fireT=W.ft;P.kick=W.kick;{const nw=performance.now();if(nw-P.lastShot>350)P.sn=0;P.lastShot=nw;if(W.rec){const r=W.rec(P.sn),hf=1+.25*(1-P.adsT);P.pitch+=r[0]*hf;P.yaw+=r[1]*hf;}else P.pitch+=W.kick*.15;P.sn++;}flash.visible=true;P.flashT=.04;if(!W.auto)fire=false;
+  const W=WP[P.w];P.ammo--;P.fireT=W.burst?nemGap(W):W.ft;P.kick=W.kick;{const nw=performance.now();if(nw-P.lastShot>350)P.sn=0;P.lastShot=nw;if(W.rec){const r=W.rec(P.sn),hf=1+.25*(1-P.adsT);P.pitch+=r[0]*hf;P.yaw+=r[1]*hf;}else P.pitch+=W.kick*.15;P.sn++;}flash.visible=true;P.flashT=.04;if(!W.auto)fire=false;
   cam.getWorldDirection(dir);
   const sg=W.sp*(1-W.ar*P.adsT)*(W.bloom?1+Math.min(1,P.sn*W.bloom)*(1-P.adsT):1);   // 腰だめ連射ほどさらにばらけるdir.x+=(Math.random()-.5)*sg;dir.y+=(Math.random()-.5)*sg;dir.z+=(Math.random()-.5)*sg;dir.normalize();
   cam.getWorldPosition(org);rc.set(org,dir);rc.far=150;
@@ -1301,7 +1362,7 @@ function update(dt){
   {const W0=WP[P.w];   // チャージ: 押している間にたまり、離すと0.1秒後から減っていく
    if(W0.chg){if(fire&&P.ammo>0&&!P.reload&&!P.un&&G.cd<=0&&!P.dead&&P.climbT<=0){P.chg=Math.min(1,P.chg+dt/(S.turbo?.01:W0.chg));P.chgR=0;}else{P.chgR+=dt;if(P.chgR>(S.turbo?0:W0.chgDelay))P.chg=Math.max(0,P.chg-dt/(S.turbo?.001:W0.chgDecay));}}
    else P.chg=1;}
-  if(fire&&!P.dead&&G.cd<=0&&P.fireT<=0&&!P.reload&&!P.un&&P.chg>=1){if(P.ammo>0)shoot();else reload();}
+  if((fire||(P.bn>0&&WP[P.w].burst))&&!P.dead&&G.cd<=0&&P.fireT<=0&&!P.reload&&!P.un&&P.chg>=1){if(P.ammo>0)shoot();else reload();}
   else if(fire&&!P.dead&&P.un&&G.cd<=0&&P.fireT<=0&&P.climbT<=0)punch();
   // 敵
   const eye=new THREE.Vector3(P.pos.x,P.pos.y+P.eye-.1,P.pos.z);
@@ -1380,7 +1441,7 @@ function update(dt){
   gun.visible=P.climbT<=0&&!P.un&&!(P.w===2&&P.adsT>.6);arms.visible=P.climbT>0||P.un||P.punchT>0;
   {const og=guns[P.w]&&guns[P.w].og;if(og)for(const k in og){const q=og[k],on=k===S.optic;q.visible=on;if(on)q.scale.setScalar(1+(q.userData.s-1)*P.adsT);}oMats.forEach(m=>{m.opacity=1-.5*P.adsT;});}
   {const am=guns[P.w]&&guns[P.w].am;if(am&&am.last!==P.ammo){am.last=P.ammo;am.draw(P.ammo);}}
-  {const gu=guns[P.w],gl=gu&&gu.glow;if(gl)gl.color.setRGB(.1+.25*P.chg,.3+.62*P.chg,.45+.55*P.chg);if(gu&&gu.turbo)gu.turbo.visible=!!S.turbo;}   // ハボックのチャージ表示
+  {const gu=guns[P.w],gl=gu&&gu.glow,cv=(gu&&gu.nem)?P.nch:P.chg;if(gl)gl.color.setRGB(.1+.25*cv,.3+.62*cv,.45+.55*cv);if(gu&&gu.turbo)gu.turbo.visible=!!S.turbo;if(gu&&gu.disk)gu.disk.rotation.x+=dt*(1+9*P.nch);}   // ハボックのチャージ表示
   if(P.climbT>0){const t=1-P.climbT/.55;arms.position.set(0,-.5+.5*t,-.05);}
   else if(P.un||P.punchT>0){const ps=P.punchT>0?Math.sin(Math.PI*(1-P.punchT/.25)):0;arms.position.set((P.pa?1:-1)*.1*ps,-.52+Math.sin(performance.now()/110)*.03*Math.min(1,spd2/9)*(P.ground?1:0)+.05*ps,-.05-.45*ps);}
   if(P.dead&&G.mode==='coop'){const o=D.opp;if(o&&!o.dead){cam.position.set(o.e.g.position.x,o.e.g.position.y+1.7,o.e.g.position.z);cam.rotation.set(0,o.tyaw,0);}gun.visible=false;arms.visible=false;}   // 観戦
